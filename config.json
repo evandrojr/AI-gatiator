@@ -1,6 +1,6 @@
 {
   "server": {
-    "port": 8080,
+    "port": 1313,
     "host": "0.0.0.0",
     "log_level": "info"
   },
@@ -25,7 +25,7 @@
         "anthropic/claude-3-haiku:free"
       ],
       "headers": {
-        "HTTP-Referer": "http://localhost:8080",
+        "HTTP-Referer": "http://localhost:1313",
         "X-Title": "AI-gatiator"
       }
     },

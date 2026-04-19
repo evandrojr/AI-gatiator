@@ -47,7 +47,7 @@ AI-gatiator.exe
 ### 3. Aponte seu agente para o gateway 🎯
 
 ```
-Base URL: http://localhost:8080/v1
+Base URL: http://localhost:1313/v1
 API Key:  qualquer valor (ex: "gateway")
 Modelo:   qualquer (o gateway substitui pelo modelo do provedor se necessário)
 ```
@@ -87,9 +87,31 @@ Você não precisa mais atualizar os modelos manualmente no seu `config.json`! O
 
 ## 📝 Exemplos de uso
 
-### curl
+### 🤖 Claude Code
+O Claude Code pode ser facilmente configurado utilizando um script local ou variáveis de ambiente antes de iniciá-lo:
 ```bash
-curl http://localhost:8080/v1/chat/completions \
+# Configura o Claude Code para usar o AI-gatiator localmente
+export ANTHROPIC_BASE_URL="http://127.0.0.1:1313/v1/"
+export ANTHROPIC_API_KEY="AI-gatiator"
+claude
+```
+
+### 🧠 Hermes Agent
+Para configurar o Hermes Agent, você deve editar o arquivo de configuração dele (ex: `config.yaml`). Adicione o seu modelo gratuito e aponte para o gateway conforme o exemplo abaixo:
+```yaml
+model:
+  default: google/gemini-2.5-flash-preview-04-17:free
+  provider: custom
+  base_url: http://localhost:1313/v1
+  context_length: 131072
+providers: {}
+fallback_providers: []
+credential_pool_strategies: {}
+```
+
+### 💻 curl
+```bash
+curl http://localhost:1313/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer qualquer" \
   -d '{
@@ -98,12 +120,12 @@ curl http://localhost:8080/v1/chat/completions \
   }'
 ```
 
-### Python (OpenAI SDK)
+### 🐍 Python (OpenAI SDK)
 ```python
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://localhost:8080/v1",
+    base_url="http://localhost:1313/v1",
     api_key="qualquer"
 )
 
@@ -114,9 +136,9 @@ resp = client.chat.completions.create(
 print(resp.choices[0].message.content)
 ```
 
-### Verificar saúde dos provedores
+### 🩺 Verificar saúde dos provedores
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:1313/health
 ```
 
 ## 💡 Dicas de Mestre 😼

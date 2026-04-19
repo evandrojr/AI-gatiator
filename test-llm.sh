@@ -2,7 +2,7 @@
 echo "Enviando pergunta de teste para o AI-gatiator..."
 echo
 
-curl -X POST http://localhost:8080/v1/chat/completions \
+curl -X POST http://localhost:1313/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer test" \
   -d '{
