@@ -1,0 +1,118 @@
+# 🐱 AI-gatiator 🐾
+
+Servidor local em Go que expõe uma API OpenAI-compatible e faz fallback automático 🔄
+entre múltiplos provedores de IA (OpenRouter, Groq, Google, Cerebras, SambaNova, DeepSeek, Ollama). 🐈
+
+## 🚀 Início rápido
+
+### 1. Preencha as chaves no arquivo `.env` 🔑
+
+Abra o arquivo `.env` (baseado no `.env.example`) e adicione as suas chaves de API.
+Os provedores que você não possui chave podem ser desabilitados no `config.json` mudando para `"enabled": false`. 😸
+
+| Provedor    | Onde obter a chave                          | Gratuito? |
+|-------------|---------------------------------------------|-----------|
+| OpenRouter  | https://openrouter.ai/keys                  | ✅ sim     |
+| Groq        | https://console.groq.com/keys               | ✅ sim     |
+| Google      | https://aistudio.google.com/apikey          | ✅ sim     |
+| Cerebras    | https://cloud.cerebras.ai/                  | ✅ sim     |
+| SambaNova   | https://cloud.sambanova.ai/                 | ✅ sim     |
+| DeepSeek    | https://platform.deepseek.com/api_keys      | 💲 pago    |
+| Ollama      | não precisa (local)                         | ✅ sim     |
+
+### 2. Compile e rode
+
+```bash
+go build -o AI-gatiator .
+./AI-gatiator
+# ou com config em outro caminho:
+./AI-gatiator /caminho/para/config.json
+```
+
+No Windows:
+```cmd
+go build -o AI-gatiator.exe .
+AI-gatiator.exe
+```
+
+### 3. Aponte seu agente para o gateway 🎯
+
+```
+Base URL: http://localhost:8080/v1
+API Key:  qualquer valor (ex: "gateway")
+Modelo:   qualquer (o gateway substitui pelo modelo do provedor se necessário)
+```
+
+> [!WARNING]
+> **Atenção usuários do Claude Code:** O Claude Code utiliza o formato de mensagens da Anthropic (`/v1/messages`). Como o AI-gatiator atua como um proxy transparente (não traduz payload), ele repassa a requisição exatamente neste formato. APIs puras como Google, Groq e Cerebras não entendem esse formato e retornarão **404**.
+> 
+> Para usar o Claude Code, você **deve habilitar o OpenRouter** no AI-gatiator (`"enabled": true`), pois os servidores do OpenRouter possuem um tradutor universal que converte o formato da Anthropic para o formato nativo de qualquer modelo gratuito (ex: `google/gemini-2.5-flash`, `groq/llama-3.3-70b-versatile`).
+
+## 🛠️ Endpoints
+
+| Método | Path                     | Descrição                        |
+|--------|--------------------------|----------------------------------|
+| POST   | /v1/chat/completions     | Completions com fallback         |
+| GET    | /v1/models               | Lista todos os modelos           |
+| GET    | /health                  | Status de cada provedor          |
+
+## 🐈 Como o fallback funciona 🐾
+
+1. Provedores são tentados em ordem de `priority` (menor = primeiro)
+2. Se você configurou múltiplas chaves em um provedor usando `"api_keys": ["chave1", "chave2"]`, o gateway testará a **chave 1 com todos os modelos** configurados. Se falhar (ex: Rate Limit 429), testará a **chave 2 com todos os modelos**, e assim por diante.
+3. Se todas as chaves e modelos de um provedor falharem, ele tenta o próximo provedor.
+4. Após falha, a chave específica do provedor fica em cooldown progressivo (30s, 60s, 120s...)
+5. Após sucesso, o contador de falhas daquela chave é zerado
+6. Se o modelo solicitado não existir no provedor, usa o `default_model`
+
+## 🧶 Ferramentas do Gatinho
+
+### 🔄 Atualização Automática de Modelos
+
+Você não precisa mais atualizar os modelos manualmente no seu `config.json`! O AI-gatiator possui um comando especial para conectar na API dos provedores ativos e atualizar os modelos:
+
+```bash
+./AI-gatiator --update-models
+```
+*Ele também é esperto: no OpenRouter, ele filtra e baixa apenas os modelos gratuitos! 😻*
+
+## 📝 Exemplos de uso
+
+### curl
+```bash
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer qualquer" \
+  -d '{
+    "model": "llama-3.3-70b-versatile",
+    "messages": [{"role": "user", "content": "Olá!"}]
+  }'
+```
+
+### Python (OpenAI SDK)
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:8080/v1",
+    api_key="qualquer"
+)
+
+resp = client.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[{"role": "user", "content": "Olá!"}]
+)
+print(resp.choices[0].message.content)
+```
+
+### Verificar saúde dos provedores
+```bash
+curl http://localhost:8080/health
+```
+
+## 💡 Dicas de Mestre 😼
+
+- Habilite apenas os provedores que você tem chave: `"enabled": false`
+- Para usar Ollama local: inicie o Ollama normalmente e habilite o provedor `ollama`
+- O header `X-Gateway-Provider` na resposta indica qual provedor foi usado
+- Streaming funciona automaticamente (o gateway faz proxy do stream) 😻

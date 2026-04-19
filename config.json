@@ -1,0 +1,129 @@
+{
+  "server": {
+    "port": 8080,
+    "host": "0.0.0.0",
+    "log_level": "info"
+  },
+  "retry": {
+    "max_attempts": 3,
+    "delay_ms": 500
+  },
+  "providers": [
+    {
+      "name": "openrouter",
+      "enabled": false,
+      "priority": 1,
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_keys": [
+        "${OPENROUTER_KEY}"
+      ],
+      "default_model": "google/gemini-2.5-flash-preview-04-17:free",
+      "models": [
+        "google/gemini-2.5-flash-preview-04-17:free",
+        "google/gemini-2.0-flash-exp:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "anthropic/claude-3-haiku:free"
+      ],
+      "headers": {
+        "HTTP-Referer": "http://localhost:8080",
+        "X-Title": "AI-gatiator"
+      }
+    },
+    {
+      "name": "groq",
+      "enabled": true,
+      "priority": 2,
+      "base_url": "https://api.groq.com/openai/v1",
+      "api_keys": [
+        "${GROQ_KEY_1}"
+      ],
+      "default_model": "llama-3.1-8b-instant",
+      "models": [
+        "llama-3.1-8b-instant",
+        "llama-3.3-70b-versatile"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "google",
+      "enabled": false,
+      "priority": 3,
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "api_keys": [
+        "${GOOGLE_KEY_1}",
+        "${GOOGLE_KEY_2}",
+        "${GOOGLE_KEY_3}"
+      ],
+      "default_model": "gemini-2.0-flash",
+      "models": [
+        "gemini-2.0-flash",
+        "gemini-2.5-flash-preview-04-17",
+        "gemini-1.5-flash"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "cerebras",
+      "enabled": false,
+      "priority": 4,
+      "base_url": "https://api.cerebras.ai/v1",
+      "api_keys": [
+        "${CEREBRAS_KEY}"
+      ],
+      "default_model": "llama3.3-70b",
+      "models": [
+        "llama3.3-70b",
+        "llama3.1-70b",
+        "llama3.1-8b"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "sambanova",
+      "enabled": false,
+      "priority": 5,
+      "base_url": "https://api.sambanova.ai/v1",
+      "api_keys": [
+        "${SAMBANOVA_KEY}"
+      ],
+      "default_model": "Meta-Llama-3.3-70B-Instruct",
+      "models": [
+        "Meta-Llama-3.3-70B-Instruct",
+        "DeepSeek-R1",
+        "Meta-Llama-3.1-405B-Instruct"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "deepseek",
+      "enabled": false,
+      "priority": 6,
+      "base_url": "https://api.deepseek.com/v1",
+      "api_keys": [
+        "${DEEPSEEK_KEY}"
+      ],
+      "default_model": "deepseek-chat",
+      "models": [
+        "deepseek-chat",
+        "deepseek-reasoner"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "ollama",
+      "enabled": false,
+      "priority": 7,
+      "base_url": "http://localhost:11434/v1",
+      "api_keys": [
+        "${OLLAMA_KEY}"
+      ],
+      "default_model": "qwen2.5-coder:7b",
+      "models": [
+        "qwen2.5-coder:7b",
+        "llama3.2:3b",
+        "gemma3:4b"
+      ],
+      "headers": {}
+    }
+  ]
+}
