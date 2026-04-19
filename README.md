@@ -3,6 +3,15 @@
 Servidor local em Go que expõe uma API OpenAI-compatible e faz fallback automático 🔄
 entre múltiplos provedores de IA (OpenRouter, Groq, Google, Cerebras, SambaNova, DeepSeek, Ollama). 🐈
 
+## ✨ Por que usar o AI-gatiator?
+
+O grande superpoder deste projeto é permitir que você utilize ferramentas avançadas de IA (como o **Hermes Agent** e o **Claude Code**) **100% de graça!** 🤑
+
+* **Burlar os Limites Gratuitos:** APIs gratuitas possuem cotas pequenas. Com o AI-gatiator, você pode cadastrar *várias chaves gratuitas* do mesmo provedor. Quando o limite (Rate Limit) da primeira chave estourar, o servidor passa automaticamente e de forma transparente para a próxima chave, e depois para o próximo modelo! O seu agente nunca fica na mão.
+* **A Recomendação de Ouro (OpenRouter):** No momento, a recomendação oficial é focar no provedor **OpenRouter** (deixando os outros em `"enabled": false`). Motivos:
+  1. **Tradução Universal:** Agentes como o *Claude Code* utilizam o formato da Anthropic (`/v1/messages`). APIs diretas como Groq ou Google não entendem isso e dão erro (404). O OpenRouter traduz do formato Anthropic para OpenAI debaixo dos panos!
+  2. **Limites Gigantescos:** Agentes autônomos enviam *System Prompts* gigantescos (mais de 15.000 tokens por requisição). Provedores diretos como o Groq bloqueiam isso instantaneamente nas contas gratuitas (Erro 413). Já os modelos gratuitos do OpenRouter (ex: `google/gemini-2.5-flash`) suportam esses prompts gigantes sem suar!
+
 ## 🚀 Início rápido
 
 ### 1. Preencha as chaves no arquivo `.env` 🔑
