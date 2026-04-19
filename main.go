@@ -470,6 +470,15 @@ func main() {
 		return
 	}
 
+	if len(os.Args) > 1 && os.Args[1] == "--install-service" {
+		installService()
+		return
+	}
+	if len(os.Args) > 2 && os.Args[2] == "--install-service" {
+		installService()
+		return
+	}
+
 	// Valida provedores
 	enabled := 0
 	for _, p := range cfg.Providers {
@@ -659,4 +668,62 @@ func updateModels(cfgPath string, cfg *Config) {
 	} else {
 		log.Println("Nenhum modelo novo precisou ser salvo.")
 	}
+}
+
+func installService() {
+	if runtime.GOOS != "linux" {
+		log.Fatal("A instalação como serviço só é suportada no Linux.")
+	}
+
+	execPath, err := os.Executable()
+	if err != nil {
+		log.Fatalf("Erro ao obter caminho do executável: %v", err)
+	}
+	execPath, _ = filepath.Abs(execPath)
+	workDir := filepath.Dir(execPath)
+
+	username := os.Getenv("SUDO_USER")
+	if username == "" {
+		username = "root" 
+	}
+
+	serviceContent := fmt.Sprintf(`[Unit]
+Description=AI-gatiator Proxy Service
+After=network.target
+
+[Service]
+Type=simple
+User=%s
+WorkingDirectory=%s
+ExecStart=%s
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+`, username, workDir, execPath)
+
+	servicePath := "/etc/systemd/system/aigatiator.service"
+	if err := os.WriteFile(servicePath, []byte(serviceContent), 0644); err != nil {
+		if os.IsPermission(err) {
+			log.Fatal("❌ Permissão negada! A instalação requer privilégios de administrador. Rode:\n   sudo ./AI-gatiator --install-service")
+		}
+		log.Fatalf("Erro ao escrever arquivo de serviço em %s: %v", servicePath, err)
+	}
+
+	fmt.Printf("✔ Arquivo de serviço criado em %s\n", servicePath)
+
+	if err := exec.Command("systemctl", "daemon-reload").Run(); err != nil {
+		log.Fatalf("Erro ao recarregar systemd: %v", err)
+	}
+	if err := exec.Command("systemctl", "enable", "aigatiator").Run(); err != nil {
+		log.Fatalf("Erro ao habilitar serviço: %v", err)
+	}
+	if err := exec.Command("systemctl", "start", "aigatiator").Run(); err != nil {
+		log.Fatalf("Erro ao iniciar serviço: %v", err)
+	}
+
+	fmt.Println("🚀 Serviço AI-gatiator instalado e iniciado com sucesso!")
+	fmt.Println("Para ver os logs, digite: journalctl -u aigatiator -f")
+	fmt.Println("Para parar o serviço, digite: sudo systemctl stop aigatiator")
 }

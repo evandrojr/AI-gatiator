@@ -85,6 +85,16 @@ Você não precisa mais atualizar os modelos manualmente no seu `config.json`! O
 ```
 *Ele também é esperto: no OpenRouter, ele filtra e baixa apenas os modelos gratuitos! 😻*
 
+### ⚙️ Instalação como Serviço (Linux / WSL)
+
+Para que o AI-gatiator inicie automaticamente com o sistema e rode em segundo plano (background) de forma robusta, você pode instalá-arlo como um serviço do `systemd`:
+
+```bash
+sudo ./AI-gatiator --install-service
+```
+Isso criará o serviço, ativará o autostart no boot e já começará a rodar o gateway! 
+Para ver os logs depois da instalação, use: `journalctl -u aigatiator -f`
+
 ## 📝 Exemplos de uso
 
 ### 🤖 Claude Code
