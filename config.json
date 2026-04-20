@@ -12,7 +12,7 @@
     {
       "name": "openrouter",
       "enabled": false,
-      "priority": 1,
+      "priority": 100,
       "base_url": "https://openrouter.ai/api/v1",
       "api_keys": [
         "${OPENROUTER_KEY}"
@@ -31,7 +31,7 @@
     },
     {
       "name": "groq",
-      "enabled": true,
+      "enabled": false,
       "priority": 2,
       "base_url": "https://api.groq.com/openai/v1",
       "api_keys": [
@@ -111,13 +111,13 @@
     },
     {
       "name": "ollama",
-      "enabled": false,
-      "priority": 7,
-      "base_url": "http://localhost:11434/v1",
+      "enabled": true,
+      "priority": 1,
+      "base_url": "http://192.168.18.51:1234/v1",
       "api_keys": [
         "${OLLAMA_KEY}"
       ],
-      "default_model": "qwen2.5-coder:7b",
+      "default_model": "google/gemma-4-e2b",
       "models": [
         "qwen2.5-coder:7b",
         "llama3.2:3b",
