@@ -68,6 +68,7 @@ func main() {
 	}
 
 	gw := NewGateway(cfg)
+	go gw.WatchConfig(*configPath)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/models", gw.handleModels)

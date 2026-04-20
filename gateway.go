@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -54,35 +55,21 @@ func (s *ProviderState) isAvailable() bool {
 
 // ─── Gateway ──────────────────────────────────────────────────────────────────
 
-type Gateway struct {
-	config Config
-	states map[string]*ProviderState // key is "providerName:apiKey"
+type GatewayState struct {
+	Config Config
+	States map[string]*ProviderState
 }
 
-func NewGateway(cfg Config) *Gateway {
-	states := make(map[string]*ProviderState)
-	for _, p := range cfg.Providers {
-		if p.Enabled {
-			for _, key := range p.GetAPIKeys() {
-				stateKey := p.Name + ":" + key
-				states[stateKey] = &ProviderState{}
-			}
-		}
-	}
-	return &Gateway{config: cfg, states: states}
-}
-
-func (g *Gateway) availableProviders() []ProviderConfig {
+func (st *GatewayState) availableProviders() []ProviderConfig {
 	var active []ProviderConfig
-	for _, p := range g.config.Providers {
+	for _, p := range st.Config.Providers {
 		if !p.Enabled {
 			continue
 		}
-		// Check if at least one key is available
 		hasAvailableKey := false
 		for _, key := range p.GetAPIKeys() {
 			stateKey := p.Name + ":" + key
-			if g.states[stateKey].isAvailable() {
+			if st.States[stateKey].isAvailable() {
 				hasAvailableKey = true
 				break
 			}
@@ -97,19 +84,100 @@ func (g *Gateway) availableProviders() []ProviderConfig {
 	return active
 }
 
-// O Gateway foi refatorado para utilizar map[string]any genérico e suportar qualquer formato de API
+type Gateway struct {
+	mu    sync.RWMutex
+	state *GatewayState
+}
 
-// ─── Lógica de fallback ───────────────────────────────────────────────────────
+func NewGateway(cfg Config) *Gateway {
+	s := &GatewayState{
+		Config: cfg,
+		States: make(map[string]*ProviderState),
+	}
+	for _, p := range cfg.Providers {
+		if p.Enabled {
+			for _, key := range p.GetAPIKeys() {
+				stateKey := p.Name + ":" + key
+				s.States[stateKey] = &ProviderState{}
+			}
+		}
+	}
+	return &Gateway{state: s}
+}
+
+func (g *Gateway) getState() *GatewayState {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return g.state
+}
+
+func (g *Gateway) WatchConfig(path string) {
+	var lastMod time.Time
+	stat, err := os.Stat(path)
+	if err == nil {
+		lastMod = stat.ModTime()
+	}
+
+	for {
+		time.Sleep(2 * time.Second)
+		stat, err := os.Stat(path)
+		if err != nil {
+			continue
+		}
+		if stat.ModTime().After(lastMod) {
+			lastMod = stat.ModTime()
+			
+			data, err := os.ReadFile(path)
+			if err != nil {
+				log.Printf("Erro ao recarregar config (leitura): %v", err)
+				continue
+			}
+			
+			var newCfg Config
+			if err := json.Unmarshal(data, &newCfg); err != nil {
+				log.Printf("Erro ao parsear config recarregada: %v", err)
+				continue
+			}
+
+			// Pega o estado antigo para copiar os states e não perder o backoff
+			oldSt := g.getState()
+			newSt := &GatewayState{
+				Config: newCfg,
+				States: make(map[string]*ProviderState),
+			}
+
+			for _, p := range newCfg.Providers {
+				if p.Enabled {
+					for _, key := range p.GetAPIKeys() {
+						stateKey := p.Name + ":" + key
+						if oldState, exists := oldSt.States[stateKey]; exists {
+							newSt.States[stateKey] = oldState
+						} else {
+							newSt.States[stateKey] = &ProviderState{}
+						}
+					}
+				}
+			}
+
+			g.mu.Lock()
+			g.state = newSt
+			g.mu.Unlock()
+
+			log.Println("🔄 Configuração recarregada com sucesso automaticamente!")
+		}
+	}
+}
 
 func (g *Gateway) forward(reqMap map[string]any, initialModel string, w http.ResponseWriter, originalPath string) {
-	providers := g.availableProviders()
+	st := g.getState()
+	providers := st.availableProviders()
 	if len(providers) == 0 {
 		http.Error(w, `{"error":"todos os provedores estão indisponíveis"}`, http.StatusServiceUnavailable)
 		return
 	}
 
-	maxAttempts := g.config.Retry.MaxAttempts
-	delay := time.Duration(g.config.Retry.DelayMs) * time.Millisecond
+	maxAttempts := st.Config.Retry.MaxAttempts
+	delay := time.Duration(st.Config.Retry.DelayMs) * time.Millisecond
 
 	var lastStatusCode int
 	var lastBody []byte
@@ -118,7 +186,7 @@ func (g *Gateway) forward(reqMap map[string]any, initialModel string, w http.Res
 		for _, provider := range providers {
 			for _, key := range provider.GetAPIKeys() {
 				stateKey := provider.Name + ":" + key
-				if !g.states[stateKey].isAvailable() {
+				if !st.States[stateKey].isAvailable() {
 					continue
 				}
 
@@ -150,13 +218,13 @@ func (g *Gateway) forward(reqMap map[string]any, initialModel string, w http.Res
 					success, statusCode, body := g.tryProviderWithKey(provider, key, reqMap, w, originalPath)
 
 					if success {
-						g.states[stateKey].recordSuccess()
+						st.States[stateKey].recordSuccess()
 						w.Header().Set("X-Gateway-Provider", provider.Name)
 						w.Header().Set("X-Gateway-Model", model)
 						return
 					}
 
-					g.states[stateKey].recordFailure()
+					st.States[stateKey].recordFailure()
 					log.Printf("[FAIL] %s (key=%s) modelo=%s tentativa=%d/%d status=%d", provider.Name, truncate(key, 8), model, attempt+1, maxAttempts, statusCode)
 					
 					lastStatusCode = statusCode
@@ -290,12 +358,14 @@ func (g *Gateway) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	status := make(map[string]any)
 
-	for _, p := range g.config.Providers {
+	st := g.getState()
+
+	for _, p := range st.Config.Providers {
 		if p.Enabled {
 			provStatus := make(map[string]any)
 			for _, key := range p.GetAPIKeys() {
 				stateKey := p.Name + ":" + key
-				s := g.states[stateKey]
+				s := st.States[stateKey]
 				s.mu.Lock()
 				provStatus[truncate(key, 8)] = map[string]any{
 					"available":    s.failures == 0 || time.Since(s.lastFailure) > 5*time.Minute,

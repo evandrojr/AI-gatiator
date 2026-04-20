@@ -118,7 +118,8 @@ func (g *Gateway) handleModels(w http.ResponseWriter, r *http.Request) {
 	var allModels []map[string]any
 	seen := make(map[string]bool)
 
-	providers := g.availableProviders()
+	st := g.getState()
+	providers := st.availableProviders()
 	for _, p := range providers {
 		for _, m := range p.Models {
 			if !seen[m] {
