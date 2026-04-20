@@ -54,7 +54,7 @@ type Config struct {
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
-func loadEnv(filename string) {
+func loadEnv(filename string, override bool) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return // ignorar se não existir
@@ -69,7 +69,7 @@ func loadEnv(filename string) {
 		if len(parts) == 2 {
 			key := strings.TrimSpace(parts[0])
 			val := strings.TrimSpace(parts[1])
-			if os.Getenv(key) == "" {
+			if override || os.Getenv(key) == "" {
 				os.Setenv(key, val)
 			}
 		}

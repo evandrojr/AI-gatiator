@@ -112,21 +112,37 @@ func (g *Gateway) getState() *GatewayState {
 }
 
 func (g *Gateway) WatchConfig(path string) {
-	var lastMod time.Time
+	var lastModConfig time.Time
+	var lastModEnv time.Time
+
 	stat, err := os.Stat(path)
 	if err == nil {
-		lastMod = stat.ModTime()
+		lastModConfig = stat.ModTime()
+	}
+	statEnv, err := os.Stat(".env")
+	if err == nil {
+		lastModEnv = statEnv.ModTime()
 	}
 
 	for {
 		time.Sleep(2 * time.Second)
+		changed := false
+
 		stat, err := os.Stat(path)
-		if err != nil {
-			continue
+		if err == nil && stat.ModTime().After(lastModConfig) {
+			lastModConfig = stat.ModTime()
+			changed = true
 		}
-		if stat.ModTime().After(lastMod) {
-			lastMod = stat.ModTime()
-			
+
+		statEnv, err := os.Stat(".env")
+		if err == nil && statEnv.ModTime().After(lastModEnv) {
+			lastModEnv = statEnv.ModTime()
+			changed = true
+		}
+
+		if changed {
+			loadEnv(".env", true) // Recarrega chaves de ambiente forçando sobrescrita
+
 			data, err := os.ReadFile(path)
 			if err != nil {
 				log.Printf("Erro ao recarregar config (leitura): %v", err)
@@ -163,7 +179,7 @@ func (g *Gateway) WatchConfig(path string) {
 			g.state = newSt
 			g.mu.Unlock()
 
-			log.Println("🔄 Configuração recarregada com sucesso automaticamente!")
+			log.Println("🔄 Configurações e ambiente recarregados com sucesso automaticamente!")
 		}
 	}
 }

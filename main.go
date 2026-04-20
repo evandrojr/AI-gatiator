@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	loadEnv(".env")
+	loadEnv(".env", false)
 
 	// Configuração do CLI usando o pacote padrão 'flag'
 	configPath := flag.String("c", "config.json", "Caminho para o arquivo de configuração")
