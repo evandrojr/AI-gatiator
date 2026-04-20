@@ -1,0 +1,140 @@
+package main
+
+import (
+	"encoding/json"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+)
+
+type ModelList struct {
+	Data []struct {
+		ID string `json:"id"`
+	} `json:"data"`
+}
+
+func updateModels(cfgPath string, cfg *Config) {
+	log.Println("Iniciando atualização automática de modelos...")
+	updated := false
+
+	for i, p := range cfg.Providers {
+		if !p.Enabled {
+			continue
+		}
+
+		baseURL := strings.TrimRight(p.BaseURL, "/")
+		modelsURL := ""
+		if strings.HasSuffix(baseURL, "/chat/completions") {
+			modelsURL = strings.TrimSuffix(baseURL, "/chat/completions") + "/models"
+		} else {
+			modelsURL = baseURL + "/models"
+		}
+
+		req, err := http.NewRequest("GET", modelsURL, nil)
+		if err != nil {
+			log.Printf("Erro ao criar request para %s: %v", p.Name, err)
+			continue
+		}
+
+		keys := p.GetAPIKeys()
+		if len(keys) > 0 && keys[0] != "" {
+			req.Header.Set("Authorization", "Bearer "+keys[0])
+		}
+
+		client := &http.Client{Timeout: 15 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("Erro ao consultar %s: %v", p.Name, err)
+			continue
+		}
+
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			log.Printf("Erro %d do provedor %s ao buscar modelos. Resposta: %s", resp.StatusCode, p.Name, string(body))
+			continue
+		}
+
+		var ml ModelList
+		if err := json.Unmarshal(body, &ml); err != nil {
+			log.Printf("Erro ao parsear resposta de %s: %v", p.Name, err)
+			continue
+		}
+
+		var newModels []string
+		for _, m := range ml.Data {
+			if p.Name == "openrouter" {
+				if strings.Contains(strings.ToLower(m.ID), "free") {
+					newModels = append(newModels, m.ID)
+				}
+			} else {
+				newModels = append(newModels, m.ID)
+			}
+		}
+
+		if len(newModels) > 0 {
+			cfg.Providers[i].Models = newModels
+			hasDefault := false
+			for _, m := range newModels {
+				if m == cfg.Providers[i].DefaultModel {
+					hasDefault = true
+					break
+				}
+			}
+			if !hasDefault {
+				cfg.Providers[i].DefaultModel = newModels[0]
+			}
+			log.Printf("✔ Provedor '%s' atualizado: %d modelos encontrados.", p.Name, len(newModels))
+			updated = true
+		} else {
+			log.Printf("❌ Provedor '%s' não retornou nenhum modelo válido.", p.Name)
+		}
+	}
+
+	if updated {
+		outBytes, err := json.MarshalIndent(cfg, "", "  ")
+		if err != nil {
+			log.Fatalf("Erro ao serializar config atualizado: %v", err)
+		}
+		if err := os.WriteFile(cfgPath, outBytes, 0644); err != nil {
+			log.Fatalf("Erro ao salvar %s: %v", cfgPath, err)
+		}
+		log.Println("✨ Atualização concluída! O arquivo config.json foi salvo com sucesso.")
+	} else {
+		log.Println("Nenhum modelo novo precisou ser salvo.")
+	}
+}
+
+func (g *Gateway) handleModels(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var allModels []map[string]any
+	seen := make(map[string]bool)
+
+	providers := g.availableProviders()
+	for _, p := range providers {
+		for _, m := range p.Models {
+			if !seen[m] {
+				seen[m] = true
+				allModels = append(allModels, map[string]any{
+					"id":      m,
+					"object":  "model",
+					"owned_by": p.Name,
+				})
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"object": "list",
+		"data":   allModels,
+	})
+}

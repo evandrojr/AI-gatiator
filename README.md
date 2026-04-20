@@ -35,7 +35,7 @@ Os provedores que você não possui chave podem ser desabilitados no `config.jso
 go build -o AI-gatiator .
 ./AI-gatiator
 # ou com config em outro caminho:
-./AI-gatiator /caminho/para/config.json
+./AI-gatiator -c /caminho/para/config.json
 ```
 
 No Windows:
