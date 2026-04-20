@@ -11,7 +11,7 @@
   "providers": [
     {
       "name": "openrouter",
-      "enabled": false,
+      "enabled": true,
       "priority": 1,
       "base_url": "https://openrouter.ai/api/v1",
       "api_keys": [
@@ -31,7 +31,7 @@
     },
     {
       "name": "groq",
-      "enabled": true,
+      "enabled": false,
       "priority": 2,
       "base_url": "https://api.groq.com/openai/v1",
       "api_keys": [
