@@ -11,11 +11,13 @@
   "providers": [
     {
       "name": "openrouter",
-      "enabled": false,
+      "enabled": true,
       "priority": 100,
       "base_url": "https://openrouter.ai/api/v1",
       "api_keys": [
-        "${OPENROUTER_KEY}"
+        "${OPENROUTER_KEY_1}",
+        "${OPENROUTER_KEY_2}",
+        "${OPENROUTER_KEY_3}"
       ],
       "default_model": "google/gemini-2.5-flash-preview-04-17:free",
       "models": [
