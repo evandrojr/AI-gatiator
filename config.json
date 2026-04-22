@@ -17,14 +17,38 @@
       "api_keys": [
         "${OPENROUTER_KEY_1}",
         "${OPENROUTER_KEY_2}",
-        "${OPENROUTER_KEY_3}"
+        "${OPENROUTER_KEY_3}",
+        "${OPENROUTER_KEY_4}",
+        "${OPENROUTER_KEY_5}"
       ],
-      "default_model": "google/gemini-2.5-flash-preview-04-17:free",
+      "default_model": "inclusionai/ling-2.6-flash:free",
       "models": [
-        "google/gemini-2.5-flash-preview-04-17:free",
-        "google/gemini-2.0-flash-exp:free",
+        "inclusionai/ling-2.6-flash:free",
+        "google/gemma-4-26b-a4b-it:free",
+        "google/gemma-4-31b-it:free",
+        "nvidia/nemotron-3-super-120b-a12b:free",
+        "minimax/minimax-m2.5:free",
+        "openrouter/free",
+        "arcee-ai/trinity-large-preview:free",
+        "liquid/lfm-2.5-1.2b-thinking:free",
+        "liquid/lfm-2.5-1.2b-instruct:free",
+        "nvidia/nemotron-3-nano-30b-a3b:free",
+        "nvidia/nemotron-nano-12b-v2-vl:free",
+        "qwen/qwen3-next-80b-a3b-instruct:free",
+        "nvidia/nemotron-nano-9b-v2:free",
+        "openai/gpt-oss-120b:free",
+        "openai/gpt-oss-20b:free",
+        "z-ai/glm-4.5-air:free",
+        "qwen/qwen3-coder:free",
+        "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+        "google/gemma-3n-e2b-it:free",
+        "google/gemma-3n-e4b-it:free",
+        "google/gemma-3-4b-it:free",
+        "google/gemma-3-12b-it:free",
+        "google/gemma-3-27b-it:free",
         "meta-llama/llama-3.3-70b-instruct:free",
-        "anthropic/claude-3-haiku:free"
+        "meta-llama/llama-3.2-3b-instruct:free",
+        "nousresearch/hermes-3-llama-3.1-405b:free"
       ],
       "headers": {
         "HTTP-Referer": "http://localhost:1313",
@@ -113,7 +137,7 @@
     },
     {
       "name": "ollama",
-      "enabled": true,
+      "enabled": false,
       "priority": 10,
       "base_url": "http://192.168.18.51:1234/v1",
       "api_keys": [
