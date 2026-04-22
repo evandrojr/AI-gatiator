@@ -12,7 +12,7 @@
     {
       "name": "openrouter",
       "enabled": true,
-      "priority": 100,
+      "priority": 1,
       "base_url": "https://openrouter.ai/api/v1",
       "api_keys": [
         "${OPENROUTER_KEY_1}",
@@ -114,7 +114,7 @@
     {
       "name": "ollama",
       "enabled": true,
-      "priority": 1,
+      "priority": 10,
       "base_url": "http://192.168.18.51:1234/v1",
       "api_keys": [
         "${OLLAMA_KEY}"
