@@ -187,6 +187,10 @@ func (g *Gateway) WatchConfig(path string) {
 func (g *Gateway) forward(reqMap map[string]any, initialModel string, w http.ResponseWriter, originalPath string) {
 	st := g.getState()
 	providers := st.availableProviders()
+	log.Printf("[DEBUG] initialModel=%q available providers=%d", initialModel, len(providers))
+	for i, p := range providers {
+		log.Printf("[DEBUG] provider[%d]=%s priority=%d", i, p.Name, p.Priority)
+	}
 	if len(providers) == 0 {
 		http.Error(w, `{"error":"todos os provedores estão indisponíveis"}`, http.StatusServiceUnavailable)
 		return
@@ -207,16 +211,18 @@ func (g *Gateway) forward(reqMap map[string]any, initialModel string, w http.Res
 				}
 
 				var modelsToTry []string
-				if initialModel != "" && containsModel(provider.Models, initialModel) {
-					modelsToTry = append(modelsToTry, initialModel)
-					for _, m := range provider.Models {
-						if m != initialModel {
-							modelsToTry = append(modelsToTry, m)
-						}
+			if initialModel != "" && containsModel(provider.Models, initialModel) {
+				modelsToTry = append(modelsToTry, initialModel)
+				log.Printf("[DEBUG] provider=%s supports model=%s, trying first", provider.Name, initialModel)
+				for _, m := range provider.Models {
+					if m != initialModel {
+						modelsToTry = append(modelsToTry, m)
 					}
-				} else {
-					modelsToTry = append([]string{provider.DefaultModel}, provider.Models...)
 				}
+			} else {
+				modelsToTry = append([]string{provider.DefaultModel}, provider.Models...)
+				log.Printf("[DEBUG] provider=%s does NOT support %s, using default=%s", provider.Name, initialModel, provider.DefaultModel)
+			}
 
 				// Filtra repetidos
 				seen := make(map[string]bool)
@@ -407,11 +413,14 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func containsModel(models []string, target string) bool {
+	log.Printf("[DEBUG] containsModel check: target=%q in models=%v", target, models)
 	for _, m := range models {
 		if m == target {
+			log.Printf("[DEBUG] containsModel: FOUND match")
 			return true
 		}
 	}
+	log.Printf("[DEBUG] containsModel: NO match")
 	return false
 }
 

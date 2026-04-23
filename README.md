@@ -68,7 +68,7 @@ Modelo:   qualquer (o gateway substitui pelo modelo do provedor se necessário)
 ## 🐈 Como o fallback funciona 🐾
 
 1. Provedores são tentados em ordem de `priority` (menor = primeiro)
-2. Se você configurou múltiplas chaves em um provedor usando `"api_keys": ["chave1", "chave2"]`, o gateway testará a **chave 1 com todos os modelos** configurados. Se falhar (ex: Rate Limit 429), testará a **chave 2 com todos os modelos**, e assim por diante.
+2. Se você configurou múltiplas chaves em um provedor usando `"api_keys": ["chave1", "chave2"]` ou `"api_keys_string": "chave1,chave2"`, o gateway testará a **chave 1 com todos os modelos** configurados. Se falhar (ex: Rate Limit 429), testará a **chave 2 com todos os modelos**, e assim por diante.
 3. Se todas as chaves e modelos de um provedor falharem, ele tenta o próximo provedor.
 4. Após falha, a chave específica do provedor fica em cooldown progressivo (30s, 60s, 120s...)
 5. Após sucesso, o contador de falhas daquela chave é zerado
@@ -157,3 +157,6 @@ curl http://localhost:1313/health
 - Para usar Ollama local: inicie o Ollama normalmente e habilite o provedor `ollama`
 - O header `X-Gateway-Provider` na resposta indica qual provedor foi usado
 - Streaming funciona automaticamente (o gateway faz proxy do stream) 😻
+- **Múltiplas chaves:** Você pode especificar múltiplas chaves de duas formas:
+  - Array JSON: `"api_keys": ["chave1", "chave2", "chave3"]`
+  - String separada por vírgulas: `"api_keys_string": "chave1,chave2,chave3"` (mais prático para variáveis de ambiente!)

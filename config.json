@@ -10,19 +10,23 @@
   },
   "providers": [
     {
+      "name": "opencode",
+      "enabled": true,
+      "priority": 10,
+      "base_url": "https://opencode.ai/zen/v1",
+      "api_keys_string": "${OPENCODE_KEY}",
+      "default_model": "big-pickle",
+      "models": [
+        "big-pickle"
+      ],
+      "headers": {}
+    },
+    {
       "name": "openrouter",
       "enabled": true,
-      "priority": 1,
+      "priority": 20,
       "base_url": "https://openrouter.ai/api/v1",
-      "api_keys": [
-        "${OPENROUTER_KEY_1}",
-        "${OPENROUTER_KEY_2}",
-        "${OPENROUTER_KEY_3}",
-        "${OPENROUTER_KEY_4}",
-        "${OPENROUTER_KEY_5}",
-        "${OPENROUTER_KEY_6}",
-        "${OPENROUTER_KEY_7}"
-      ],
+      "api_keys_string": "${OPENROUTER_KEYS}",
       "default_model": "inclusionai/ling-2.6-flash:free",
       "models": [
         "inclusionai/ling-2.6-flash:free",
@@ -59,12 +63,10 @@
     },
     {
       "name": "groq",
-      "enabled": false,
-      "priority": 2,
+      "enabled": true,
+      "priority": 30,
       "base_url": "https://api.groq.com/openai/v1",
-      "api_keys": [
-        "${GROQ_KEY_1}"
-      ],
+      "api_keys_string": "${GROQ_KEY_1}",
       "default_model": "llama-3.1-8b-instant",
       "models": [
         "llama-3.1-8b-instant",
@@ -74,14 +76,10 @@
     },
     {
       "name": "google",
-      "enabled": false,
-      "priority": 3,
+      "enabled": true,
+      "priority": 40,
       "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
-      "api_keys": [
-        "${GOOGLE_KEY_1}",
-        "${GOOGLE_KEY_2}",
-        "${GOOGLE_KEY_3}"
-      ],
+      "api_keys_string": "${GOOGLE_KEYS}",
       "default_model": "gemini-2.0-flash",
       "models": [
         "gemini-2.0-flash",
@@ -93,11 +91,9 @@
     {
       "name": "cerebras",
       "enabled": false,
-      "priority": 4,
+      "priority": 50,
       "base_url": "https://api.cerebras.ai/v1",
-      "api_keys": [
-        "${CEREBRAS_KEY}"
-      ],
+      "api_keys_string": "${CEREBRAS_KEY}",
       "default_model": "llama3.3-70b",
       "models": [
         "llama3.3-70b",
@@ -109,11 +105,9 @@
     {
       "name": "sambanova",
       "enabled": false,
-      "priority": 5,
+      "priority": 60,
       "base_url": "https://api.sambanova.ai/v1",
-      "api_keys": [
-        "${SAMBANOVA_KEY}"
-      ],
+      "api_keys_string": "${SAMBANOVA_KEY}",
       "default_model": "Meta-Llama-3.3-70B-Instruct",
       "models": [
         "Meta-Llama-3.3-70B-Instruct",
@@ -125,11 +119,9 @@
     {
       "name": "deepseek",
       "enabled": false,
-      "priority": 6,
+      "priority": 70,
       "base_url": "https://api.deepseek.com/v1",
-      "api_keys": [
-        "${DEEPSEEK_KEY}"
-      ],
+      "api_keys_string": "${DEEPSEEK_KEY}",
       "default_model": "deepseek-chat",
       "models": [
         "deepseek-chat",
@@ -138,20 +130,18 @@
       "headers": {}
     },
     {
-      "name": "ollama",
-      "enabled": false,
-      "priority": 10,
-      "base_url": "http://192.168.18.51:1234/v1",
-      "api_keys": [
-        "${OLLAMA_KEY}"
-      ],
-      "default_model": "google/gemma-4-e2b",
+"name": "ollama",
+      "enabled": true,
+      "priority": 910,
+      "base_url": "http://localhost:11434/v1",
+      "api_keys_string": "",
+      "default_model": "qwen-fast",
       "models": [
-        "qwen2.5-coder:7b",
-        "llama3.2:3b",
-        "gemma3:4b"
+        "qwen-fast",
+        "qwen3:0.6b"
       ],
-      "headers": {}
+      "headers": {},
+      "no_auth": true
     }
   ]
 }
