@@ -7,81 +7,76 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/ai-gatiator/internal/gateway"
 )
 
 func main() {
-	loadEnv(".env", false)
+	gateway.LoadEnv(".env", false)
 
-	// Configuração do CLI usando o pacote padrão 'flag'
 	configPath := flag.String("c", "config.json", "Caminho para o arquivo de configuração")
 	updateModelsFlag := flag.Bool("update-models", false, "Conecta nas APIs e atualiza os modelos no config.json")
 	installSvcFlag := flag.Bool("install-service", false, "Instala o AI-gatiator como um serviço do sistema (Linux/WSL)")
 
-	// Customizando a mensagem do --help
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "🐱 AI-gatiator 🐾\n")
+		fmt.Fprintf(os.Stderr, "AI-gatiator\n")
 		fmt.Fprintf(os.Stderr, "Uso: %s [opções]\n\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Opções disponíveis:\n")
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
 
-	// Tratamento de flags especiais
 	if *installSvcFlag {
-		installService()
+		gateway.InstallService()
 		return
 	}
 
-	// Lê o arquivo de configuração
 	data, err := os.ReadFile(*configPath)
 	if err != nil {
 		if os.IsNotExist(err) && *configPath == "config.json" {
-			// Se for a primeira execução (config.json não existe), auto-gera um padrão
 			log.Println("Arquivo config.json não encontrado. Gerando configuração padrão...")
-			generateDefaultConfig(*configPath)
+			gateway.GenerateDefaultConfig(*configPath)
 			return
 		}
 		log.Fatalf("Erro ao ler config: %v", err)
 	}
 
-	var cfg Config
+	var cfg gateway.Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		log.Fatalf("Erro ao parsear config: %v", err)
 	}
 
 	if *updateModelsFlag {
-		updateModels(*configPath, &cfg)
+		gateway.UpdateModels(*configPath, &cfg)
 		return
 	}
 
-	// Valida provedores
 	enabled := 0
 	for _, p := range cfg.Providers {
 		if p.Enabled {
 			enabled++
-			log.Printf("✔ Provedor carregado: %s (prioridade %d) modelo=%s", p.Name, p.Priority, p.DefaultModel)
+			log.Printf("Provider carregado: %s (prioridade %d) modelo=%s", p.Name, p.Priority, p.DefaultModel)
 		}
 	}
 	if enabled == 0 {
 		log.Fatal("Nenhum provedor habilitado no config.json")
 	}
 
-	gw := NewGateway(cfg)
+	gw := gateway.NewGateway(cfg)
 	go gw.WatchConfig(*configPath)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/models", gw.handleModels)
-	mux.HandleFunc("/v1/", gw.handleGeneric)
-	mux.HandleFunc("/health", gw.handleHealth)
+	mux.HandleFunc("/v1/models", gw.HandleModels)
+	mux.HandleFunc("/v1/", gw.HandleGeneric)
+	mux.HandleFunc("/health", gw.HandleHealth)
 
-	killProcessOnPort(cfg.Server.Port)
+	gateway.KillProcessOnPort(cfg.Server.Port)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
-	log.Printf("🐱 AI-gatiator rodando em http://%s 🐾", addr)
+	log.Printf("AI-gatiator rodando em http://%s", addr)
 	log.Printf("Endpoints: POST /v1/chat/completions | GET /v1/models | GET /health")
 
-	if err := http.ListenAndServe(addr, loggingMiddleware(mux)); err != nil {
+	if err := http.ListenAndServe(addr, gateway.LoggingMiddleware(mux)); err != nil {
 		log.Fatalf("Erro ao iniciar servidor: %v", err)
 	}
 }

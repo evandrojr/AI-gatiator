@@ -1,4 +1,4 @@
-package main
+package gateway
 
 import (
 	"encoding/json"
@@ -21,16 +21,17 @@ type RetryConfig struct {
 }
 
 type ProviderConfig struct {
-	Name         string            `json:"name"`
-	Enabled      bool              `json:"enabled"`
-	Priority     int               `json:"priority"`
-	BaseURL      string            `json:"base_url"`
-	APIKeys      []string          `json:"api_keys,omitempty"`
-	APIKeysString string          `json:"api_keys_string,omitempty"` // vírgula-separated keys como alternativa ao array
-	APIKey       string            `json:"api_key,omitempty"` // fallback para um único key
-	DefaultModel string            `json:"default_model"`
-	Models       []string          `json:"models"`
-	Headers      map[string]string `json:"headers"`
+	Name          string            `json:"name"`
+	Enabled       bool              `json:"enabled"`
+	Priority      int               `json:"priority"`
+	MaxConcurrent int               `json:"max_concurrent"` // 0 = unlimited
+	BaseURL       string            `json:"base_url"`
+	APIKeys       []string          `json:"api_keys,omitempty"`
+	APIKeysString string            `json:"api_keys_string,omitempty"`
+	APIKey        string            `json:"api_key,omitempty"`
+	DefaultModel  string            `json:"default_model"`
+	Models        []string          `json:"models"`
+	Headers       map[string]string `json:"headers"`
 }
 
 func (p *ProviderConfig) GetAPIKeys() []string {
@@ -69,7 +70,7 @@ type Config struct {
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
-func loadEnv(filename string, override bool) {
+func LoadEnv(filename string, override bool) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return // ignorar se não existir
@@ -93,7 +94,7 @@ func loadEnv(filename string, override bool) {
 
 // ─── Auto-geração ─────────────────────────────────────────────────────────────
 
-func generateDefaultConfig(path string) {
+func GenerateDefaultConfig(path string) {
 	defaultConfig := Config{
 		Server: ServerConfig{
 			Port:     1313,

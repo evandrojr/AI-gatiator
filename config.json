@@ -8,10 +8,10 @@
     "max_attempts": 3,
     "delay_ms": 500
   },
-  "providers": [
+"providers": [
     {
       "name": "opencode",
-      "enabled": true,
+      "enabled": false,
       "priority": 10,
       "base_url": "https://opencode.ai/zen/v1",
       "api_keys_string": "${OPENCODE_KEY}",
@@ -23,7 +23,7 @@
     },
     {
       "name": "openrouter",
-      "enabled": true,
+      "enabled": false,
       "priority": 20,
       "base_url": "https://openrouter.ai/api/v1",
       "api_keys_string": "${OPENROUTER_KEYS}",
@@ -44,7 +44,7 @@
         "nvidia/nemotron-nano-9b-v2:free",
         "openai/gpt-oss-120b:free",
         "openai/gpt-oss-20b:free",
-        "z-ai/glm-4.5-air:free",
+        "z-ai/glm-4-4-air:free",
         "qwen/qwen3-coder:free",
         "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
         "google/gemma-3n-e2b-it:free",
@@ -63,7 +63,7 @@
     },
     {
       "name": "groq",
-      "enabled": true,
+      "enabled": false,
       "priority": 30,
       "base_url": "https://api.groq.com/openai/v1",
       "api_keys_string": "${GROQ_KEY_1}",
@@ -76,7 +76,7 @@
     },
     {
       "name": "google",
-      "enabled": true,
+      "enabled": false,
       "priority": 40,
       "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
       "api_keys_string": "${GOOGLE_KEYS}",
@@ -130,9 +130,10 @@
       "headers": {}
     },
     {
-"name": "ollama",
+      "name": "ollama",
       "enabled": true,
       "priority": 910,
+      "max_concurrent": 0,
       "base_url": "http://localhost:11434/v1",
       "api_keys_string": "",
       "default_model": "qwen-fast",
@@ -140,8 +141,7 @@
         "qwen-fast",
         "qwen3:0.6b"
       ],
-      "headers": {},
-      "no_auth": true
+      "headers": {}
     }
   ]
 }

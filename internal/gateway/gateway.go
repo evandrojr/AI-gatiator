@@ -1,4 +1,4 @@
-package main
+package gateway
 
 import (
 	"bytes"
@@ -85,8 +85,9 @@ func (st *GatewayState) availableProviders() []ProviderConfig {
 }
 
 type Gateway struct {
-	mu    sync.RWMutex
-	state *GatewayState
+	mu           sync.RWMutex
+	state        *GatewayState
+	semaphores   map[string]chan struct{}
 }
 
 func NewGateway(cfg Config) *Gateway {
@@ -102,7 +103,15 @@ func NewGateway(cfg Config) *Gateway {
 			}
 		}
 	}
-	return &Gateway{state: s}
+
+	semaphores := make(map[string]chan struct{})
+	for _, p := range cfg.Providers {
+		if p.Enabled && p.MaxConcurrent > 0 {
+			semaphores[p.Name] = make(chan struct{}, p.MaxConcurrent)
+		}
+	}
+
+	return &Gateway{state: s, semaphores: semaphores}
 }
 
 func (g *Gateway) getState() *GatewayState {
@@ -141,7 +150,7 @@ func (g *Gateway) WatchConfig(path string) {
 		}
 
 		if changed {
-			loadEnv(".env", true) // Recarrega chaves de ambiente forçando sobrescrita
+			LoadEnv(".env", true) // Recarrega chaves de ambiente forçando sobrescrita
 
 			data, err := os.ReadFile(path)
 			if err != nil {
@@ -184,7 +193,7 @@ func (g *Gateway) WatchConfig(path string) {
 	}
 }
 
-func (g *Gateway) forward(reqMap map[string]any, initialModel string, w http.ResponseWriter, originalPath string) {
+func (g *Gateway) Forward(reqMap map[string]any, initialModel string, w http.ResponseWriter, originalPath string) {
 	st := g.getState()
 	providers := st.availableProviders()
 	log.Printf("[DEBUG] initialModel=%q available providers=%d", initialModel, len(providers))
@@ -279,6 +288,12 @@ func (g *Gateway) forward(reqMap map[string]any, initialModel string, w http.Res
 }
 
 func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map[string]any, w http.ResponseWriter, originalPath string) (success bool, statusCode int, body []byte) {
+	sem, hasSem := g.semaphores[p.Name]
+	if hasSem {
+		sem <- struct{}{}
+		defer func() { <-sem }()
+	}
+
 	reqBodyBytes, err := json.Marshal(reqMap)
 	if err != nil {
 		return false, 500, []byte(`{"error":"internal error encoding request"}`)
@@ -286,7 +301,7 @@ func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map
 
 	path := strings.TrimPrefix(originalPath, "/v1")
 	url := strings.TrimRight(p.BaseURL, "/") + path
-	
+
 	httpReq, err := http.NewRequest("POST", url, bytes.NewReader(reqBodyBytes))
 	if err != nil {
 		return false, 500, []byte(`{"error":"internal error creating request"}`)
@@ -302,8 +317,7 @@ func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map
 	}
 
 	client := &http.Client{Timeout: 60 * time.Second} // Aumentado para 60s
-	
-	// Verifica se é stream
+
 	isStream := false
 	if streamVal, ok := reqMap["stream"].(bool); ok {
 		isStream = streamVal
@@ -316,7 +330,6 @@ func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		// Proxy headers
 		for k, v := range resp.Header {
 			w.Header()[k] = v
 		}
@@ -343,14 +356,13 @@ func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map
 		return true, resp.StatusCode, nil
 	}
 
-	// Erro do provider
 	errorBody, _ := io.ReadAll(resp.Body)
 	return false, resp.StatusCode, errorBody
 }
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 
-func (g *Gateway) handleGeneric(w http.ResponseWriter, r *http.Request) {
+func (g *Gateway) HandleGeneric(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -373,10 +385,10 @@ func (g *Gateway) handleGeneric(w http.ResponseWriter, r *http.Request) {
 		initialModel = m
 	}
 
-	g.forward(reqMap, initialModel, w, r.URL.Path)
+	g.Forward(reqMap, initialModel, w, r.URL.Path)
 }
 
-func (g *Gateway) handleHealth(w http.ResponseWriter, r *http.Request) {
+func (g *Gateway) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	status := make(map[string]any)
 
@@ -403,7 +415,7 @@ func (g *Gateway) handleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(status)
 }
 
-func loggingMiddleware(next http.Handler) http.Handler {
+func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		log.Printf("→ %s %s", r.Method, r.URL.Path)

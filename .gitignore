@@ -1,5 +1,8 @@
-# config.json
-AI-gatiator.exe
+# Binaries
 AI-gatiator
+AI-gatiator.exe
+loadtest
+
+# Config
 .env
 

@@ -1,4 +1,4 @@
-package main
+package gateway
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func killProcessOnPort(port int) {
+func KillProcessOnPort(port int) {
 	if runtime.GOOS == "windows" {
 		portStr := fmt.Sprintf(":%d", port)
 		cmd := exec.Command("netstat", "-ano")
@@ -75,7 +75,7 @@ func killProcessOnPort(port int) {
 	}
 }
 
-func installService() {
+func InstallService() {
 	if runtime.GOOS != "linux" {
 		log.Fatal("A instalação como serviço só é suportada no Linux.")
 	}

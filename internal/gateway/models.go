@@ -1,4 +1,4 @@
-package main
+package gateway
 
 import (
 	"encoding/json"
@@ -16,7 +16,7 @@ type ModelList struct {
 	} `json:"data"`
 }
 
-func updateModels(cfgPath string, cfg *Config) {
+func UpdateModels(cfgPath string, cfg *Config) {
 	log.Println("Iniciando atualização automática de modelos...")
 	updated := false
 
@@ -109,7 +109,7 @@ func updateModels(cfgPath string, cfg *Config) {
 	}
 }
 
-func (g *Gateway) handleModels(w http.ResponseWriter, r *http.Request) {
+func (g *Gateway) HandleModels(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
