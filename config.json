@@ -139,8 +139,7 @@
       "api_keys_string": "",
       "default_model": "qwen-fast",
       "models": [
-        "qwen-fast",
-        "qwen3:0.6b"
+        "qwen-fast"
       ],
       "headers": {}
     }
