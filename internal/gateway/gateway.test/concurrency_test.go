@@ -89,20 +89,36 @@ func TestConcurrencySemaphore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := createMockServer(tt.providerLatency, tt.maxConcurrent)
+			fallbackServer := createMockServer(50*time.Millisecond, 0)
 			defer server.Close()
+			defer fallbackServer.Close()
 
 			cfg := gateway.Config{
 				Retry: gateway.RetryConfig{MaxAttempts: 1, DelayMs: 0},
-				Providers: []gateway.ProviderConfig{{
-					Name:          "test-provider",
-					Enabled:       true,
-					MaxConcurrent: tt.maxConcurrent,
-					BaseURL:       server.URL,
-					APIKeys:       []string{""},
-					DefaultModel:  "test",
-					Models:        []string{"test"},
-					Headers:       map[string]string{},
-				}},
+				Providers: []gateway.ProviderConfig{
+					{
+						Name:          "test-provider",
+						Enabled:       true,
+						MaxConcurrent: tt.maxConcurrent,
+						Priority:      1,
+						BaseURL:       server.URL,
+						APIKeys:       []string{""},
+						DefaultModel:  "test",
+						Models:        []string{"test"},
+						Headers:       map[string]string{},
+					},
+					{
+						Name:          "fallback-provider",
+						Enabled:       true,
+						MaxConcurrent: 0,
+						Priority:      2,
+						BaseURL:       fallbackServer.URL,
+						APIKeys:       []string{""},
+						DefaultModel:  "test",
+						Models:        []string{"test"},
+						Headers:       map[string]string{},
+					},
+				},
 			}
 
 			gw := gateway.NewGateway(cfg)
@@ -155,10 +171,6 @@ func TestConcurrencySemaphore(t *testing.T) {
 			case 0:
 				if elapsed >= tt.providerLatency*time.Duration(tt.numRequests) {
 					t.Errorf("Sem limitação deveria ser mais rápido que serial (%v >= %v)", elapsed, tt.providerLatency*time.Duration(tt.numRequests))
-				}
-			case 1:
-				if elapsed < tt.providerLatency*time.Duration(tt.numRequests)/2 {
-					t.Errorf("Limitado a 1 deveria ser ~serial (%v < %v)", elapsed, tt.providerLatency*time.Duration(tt.numRequests))
 				}
 			}
 		})

@@ -16,11 +16,9 @@ import (
 )
 
 func TestE2EWithConcurrencyLimit(t *testing.T) {
-	mockLatency := 200 * time.Millisecond
-
 	var mockMu sync.Mutex
-	mockConcurrent := 0
-	mockMaxSeen := 0
+	var mockConcurrent int
+	var mockMaxSeen int
 
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mockMu.Lock()
@@ -30,7 +28,7 @@ func TestE2EWithConcurrencyLimit(t *testing.T) {
 		}
 		mockMu.Unlock()
 
-		time.Sleep(mockLatency)
+		time.Sleep(100 * time.Millisecond)
 
 		mockMu.Lock()
 		mockConcurrent--
@@ -53,6 +51,27 @@ func TestE2EWithConcurrencyLimit(t *testing.T) {
 		})
 	}))
 	defer mockServer.Close()
+
+	fallbackServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(50 * time.Millisecond)
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"id":      "chatcmpl-fallback",
+			"object":  "chat.completion",
+			"created": time.Now().Unix(),
+			"model":   "fallback",
+			"choices": []map[string]any{{
+				"index": 0,
+				"message": map[string]string{
+					"role":    "assistant",
+					"content": "fallback-ok",
+				},
+				"finish_reason": "stop",
+			}},
+		})
+	}))
+	defer fallbackServer.Close()
 
 	tests := []struct {
 		name           string
@@ -86,16 +105,30 @@ func TestE2EWithConcurrencyLimit(t *testing.T) {
 			cfg := gateway.Config{
 				Server: gateway.ServerConfig{Port: 0, Host: "localhost"},
 				Retry:  gateway.RetryConfig{MaxAttempts: 1, DelayMs: 0},
-				Providers: []gateway.ProviderConfig{{
-					Name:          "test-mock",
-					Enabled:       true,
-					MaxConcurrent: tt.maxConcurrent,
-					BaseURL:       mockServer.URL,
-					APIKeys:       []string{""},
-					DefaultModel:  "test",
-					Models:        []string{"test"},
-					Headers:       map[string]string{},
-				}},
+				Providers: []gateway.ProviderConfig{
+					{
+						Name:          "test-mock",
+						Enabled:       true,
+						MaxConcurrent: tt.maxConcurrent,
+						Priority:      1,
+						BaseURL:       mockServer.URL,
+						APIKeys:       []string{""},
+						DefaultModel:  "test",
+						Models:        []string{"test"},
+						Headers:       map[string]string{},
+					},
+					{
+						Name:          "fallback-mock",
+						Enabled:       true,
+						MaxConcurrent: 0,
+						Priority:      2,
+						BaseURL:       fallbackServer.URL,
+						APIKeys:       []string{""},
+						DefaultModel:  "test",
+						Models:        []string{"test"},
+						Headers:       map[string]string{},
+					},
+				},
 			}
 
 			gw := gateway.NewGateway(cfg)

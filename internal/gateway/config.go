@@ -10,9 +10,10 @@ import (
 // ─── Config structs ───────────────────────────────────────────────────────────
 
 type ServerConfig struct {
-	Port     int    `json:"port"`
-	Host     string `json:"host"`
-	LogLevel string `json:"log_level"`
+	Port          int    `json:"port"`
+	Host          string `json:"host"`
+	LogLevel      string `json:"log_level"`
+	MaxConcurrent int    `json:"max_concurrent"` // Global limit, 0 = unlimited
 }
 
 type RetryConfig struct {

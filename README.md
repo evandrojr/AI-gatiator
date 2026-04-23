@@ -160,3 +160,37 @@ curl http://localhost:1313/health
 - **Múltiplas chaves:** Você pode especificar múltiplas chaves de duas formas:
   - Array JSON: `"api_keys": ["chave1", "chave2", "chave3"]`
   - String separada por vírgulas: `"api_keys_string": "chave1,chave2,chave3"` (mais prático para variáveis de ambiente!)
+
+## 🔒 Controle de Concorrência por Provedor
+
+Cada provedor pode ter um limite máximo de requisições simultâneas com `max_concurrent`:
+
+```json
+{
+  "name": "ollama",
+  "enabled": true,
+  "priority": 10,
+  "max_concurrent": 2,
+  "base_url": "http://localhost:11434/v1"
+}
+```
+
+### Comportamento
+
+| max_concurrent | Comportamento |
+|----------------|---------------|
+| `0` ou não especificado | Ilimitado - todas as requisições vão em paralelo |
+| `1` | Serial - uma requisição por vez (ótimo para Ollama local) |
+| `n` | Permite até `n` requisições simultâneas |
+
+### Failover por Concorrência
+
+Quando um provedor atinge seu limite de concorrência:
+1. O gateway marca o provedor como "bloqueado temporariamente"
+2. Passa automaticamente para o próximo provedor disponível
+3. Após ~5 segundos, o provedor bloqueado é re-testado automaticamente
+
+Isso é ideal para:
+- **Ollama local**: Limita a 1 para evitar sobrecarga
+- **Provedores com rate limit**: Combina `max_concurrent` com fallback para cloud
+- **Balanceamento de carga**: Distribui requisições entre múltiplos provedores

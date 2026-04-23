@@ -17,9 +17,11 @@ import (
 // ─── Provider state (tracks failures) ────────────────────────────────────────
 
 type ProviderState struct {
-	mu           sync.Mutex
-	failures     int
-	lastFailure  time.Time
+	mu                    sync.Mutex
+	failures              int
+	lastFailure           time.Time
+	concurrencyBlocked    bool
+	concurrencyBlockedAt  time.Time
 }
 
 func (s *ProviderState) recordFailure() {
@@ -34,6 +36,27 @@ func (s *ProviderState) recordSuccess() {
 	defer s.mu.Unlock()
 	s.failures = 0
 	s.lastFailure = time.Time{}
+	s.concurrencyBlocked = false
+}
+
+func (s *ProviderState) recordConcurrencyBlocked() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.concurrencyBlocked = true
+	s.concurrencyBlockedAt = time.Now()
+}
+
+func (s *ProviderState) isConcurrencyBlocked() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.concurrencyBlocked {
+		return false
+	}
+	if time.Since(s.concurrencyBlockedAt) > 5*time.Second {
+		s.concurrencyBlocked = false
+		return false
+	}
+	return true
 }
 
 func (s *ProviderState) isAvailable() bool {
@@ -69,7 +92,7 @@ func (st *GatewayState) availableProviders() []ProviderConfig {
 		hasAvailableKey := false
 		for _, key := range p.GetAPIKeys() {
 			stateKey := p.Name + ":" + key
-			if st.States[stateKey].isAvailable() {
+			if st.States[stateKey].isAvailable() && !st.States[stateKey].isConcurrencyBlocked() {
 				hasAvailableKey = true
 				break
 			}
@@ -106,8 +129,14 @@ func NewGateway(cfg Config) *Gateway {
 
 	semaphores := make(map[string]chan struct{})
 	for _, p := range cfg.Providers {
-		if p.Enabled && p.MaxConcurrent > 0 {
-			semaphores[p.Name] = make(chan struct{}, p.MaxConcurrent)
+		if p.Enabled {
+			maxConc := p.MaxConcurrent
+			if maxConc == 0 && cfg.Server.MaxConcurrent > 0 {
+				maxConc = cfg.Server.MaxConcurrent
+			}
+			if maxConc > 0 {
+				semaphores[p.Name] = make(chan struct{}, maxConc)
+			}
 		}
 	}
 
@@ -246,7 +275,12 @@ func (g *Gateway) Forward(reqMap map[string]any, initialModel string, w http.Res
 				for _, model := range filtered {
 					reqMap["model"] = model
 
-					success, statusCode, body := g.tryProviderWithKey(provider, key, reqMap, w, originalPath)
+					success, statusCode, body, blocked := g.tryProviderWithKey(provider, key, reqMap, w, originalPath)
+
+					if blocked {
+						log.Printf("[BLOCKED] %s concurrency limit reached, trying next provider", provider.Name)
+						break // para este provider, tenta o próximo
+					}
 
 					if success {
 						st.States[stateKey].recordSuccess()
@@ -287,16 +321,23 @@ func (g *Gateway) Forward(reqMap map[string]any, initialModel string, w http.Res
 	http.Error(w, `{"error":"todos os provedores e chaves falharam após múltiplas tentativas"}`, http.StatusBadGateway)
 }
 
-func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map[string]any, w http.ResponseWriter, originalPath string) (success bool, statusCode int, body []byte) {
+func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map[string]any, w http.ResponseWriter, originalPath string) (success bool, statusCode int, body []byte, semaphoreFull bool) {
 	sem, hasSem := g.semaphores[p.Name]
 	if hasSem {
-		sem <- struct{}{}
+		select {
+		case sem <- struct{}{}:
+		default:
+			stateKey := p.Name + ":" + apiKey
+			g.state.States[stateKey].recordConcurrencyBlocked()
+			log.Printf("[BLOCKED] %s reached max_concurrent, skipping to next provider", p.Name)
+			return false, 0, nil, true
+		}
 		defer func() { <-sem }()
 	}
 
 	reqBodyBytes, err := json.Marshal(reqMap)
 	if err != nil {
-		return false, 500, []byte(`{"error":"internal error encoding request"}`)
+		return false, 500, []byte(`{"error":"internal error encoding request"}`), false
 	}
 
 	path := strings.TrimPrefix(originalPath, "/v1")
@@ -304,7 +345,7 @@ func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map
 
 	httpReq, err := http.NewRequest("POST", url, bytes.NewReader(reqBodyBytes))
 	if err != nil {
-		return false, 500, []byte(`{"error":"internal error creating request"}`)
+		return false, 500, []byte(`{"error":"internal error creating request"}`), false
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -325,7 +366,7 @@ func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map
 
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		return false, 502, []byte(fmt.Sprintf(`{"error":"erro ao conectar no provedor: %v"}`, err))
+		return false, 502, []byte(fmt.Sprintf(`{"error":"erro ao conectar no provedor: %v"}`, err)), false
 	}
 	defer resp.Body.Close()
 
@@ -353,11 +394,11 @@ func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map
 		} else {
 			io.Copy(w, resp.Body)
 		}
-		return true, resp.StatusCode, nil
+		return true, resp.StatusCode, nil, false
 	}
 
 	errorBody, _ := io.ReadAll(resp.Body)
-	return false, resp.StatusCode, errorBody
+	return false, resp.StatusCode, errorBody, false
 }
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
