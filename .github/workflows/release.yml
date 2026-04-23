@@ -38,7 +38,7 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             output_name+=".exe"
           fi
-          go build -ldflags="-s -w" -o "$output_name" .
+          go build -ldflags="-s -w" -o "$output_name" ./cmd/gateway/
 
       - name: Release
         uses: softprops/action-gh-release@v2
