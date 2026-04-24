@@ -3,7 +3,8 @@
     "port": 1313,
     "host": "0.0.0.0",
     "log_level": "info",
-    "max_concurrent": 3
+    "max_concurrent": 0,
+    "timeout_sec": 60
   },
   "retry": {
     "max_attempts": 3,

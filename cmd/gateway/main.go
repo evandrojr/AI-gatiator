@@ -46,6 +46,11 @@ func main() {
 		log.Fatalf("Erro ao parsear config: %v", err)
 	}
 
+	// Set default timeout
+	if cfg.Server.TimeoutSec <= 0 {
+		cfg.Server.TimeoutSec = 60
+	}
+
 	if *updateModelsFlag {
 		gateway.UpdateModels(*configPath, &cfg)
 		return

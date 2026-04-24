@@ -111,12 +111,18 @@ type Gateway struct {
 	mu           sync.RWMutex
 	state        *GatewayState
 	semaphores   map[string]chan struct{}
+	timeout     time.Duration
 }
 
 func NewGateway(cfg Config) *Gateway {
 	s := &GatewayState{
 		Config: cfg,
 		States: make(map[string]*ProviderState),
+	}
+
+	timeoutSec := cfg.Server.TimeoutSec
+	if timeoutSec <= 0 {
+		timeoutSec = 60
 	}
 	for _, p := range cfg.Providers {
 		if p.Enabled {
@@ -140,7 +146,7 @@ func NewGateway(cfg Config) *Gateway {
 		}
 	}
 
-	return &Gateway{state: s, semaphores: semaphores}
+	return &Gateway{state: s, semaphores: semaphores, timeout: time.Duration(timeoutSec) * time.Second}
 }
 
 func (g *Gateway) getState() *GatewayState {
@@ -357,7 +363,7 @@ func (g *Gateway) tryProviderWithKey(p ProviderConfig, apiKey string, reqMap map
 		httpReq.Header.Set(k, v)
 	}
 
-	client := &http.Client{Timeout: 60 * time.Second} // Aumentado para 60s
+	client := &http.Client{Timeout: g.timeout} // Aumentado para 60s
 
 	isStream := false
 	if streamVal, ok := reqMap["stream"].(bool); ok {

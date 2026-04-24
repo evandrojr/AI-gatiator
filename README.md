@@ -32,16 +32,29 @@ Os provedores que você não possui chave podem ser desabilitados no `config.jso
 ### 2. Compile e rode
 
 ```bash
-go build -o AI-gatiator .
+# Opção 1: Use o script run.sh (recomendado)
+./run.sh
+
+# Opção 2: Build manual
+go build -o AI-gatiator ./cmd/gateway/
 ./AI-gatiator
-# ou com config em outro caminho:
+
+# Com config em outro caminho:
 ./AI-gatiator -c /caminho/para/config.json
 ```
 
 No Windows:
 ```cmd
-go build -o AI-gatiator.exe .
+go build -o AI-gatiator.exe ./cmd/gateway/
 AI-gatiator.exe
+```
+
+**Comandos do run.sh:**
+```bash
+./run.sh          # Build + Run (default)
+./run.sh build    # Apenas build
+./run.sh test     # Rodar testes
+./run.sh test-v   # Rodar testes (verbose)
 ```
 
 ### 3. Aponte seu agente para o gateway 🎯

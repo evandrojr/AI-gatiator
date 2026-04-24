@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -10,10 +11,11 @@ import (
 // ─── Config structs ───────────────────────────────────────────────────────────
 
 type ServerConfig struct {
-	Port          int    `json:"port"`
-	Host          string `json:"host"`
-	LogLevel      string `json:"log_level"`
+	Port           int    `json:"port"`
+	Host           string `json:"host"`
+	LogLevel       string `json:"log_level"`
 	MaxConcurrent int    `json:"max_concurrent"` // Global limit, 0 = unlimited
+	TimeoutSec    int    `json:"timeout_sec"`  // Request timeout in seconds
 }
 
 type RetryConfig struct {
@@ -67,6 +69,36 @@ type Config struct {
 	Server    ServerConfig     `json:"server"`
 	Retry     RetryConfig      `json:"retry"`
 	Providers []ProviderConfig `json:"providers"`
+}
+
+// Validate validates the configuration
+func (c *Config) Validate() error {
+	if c.Server.Port <= 0 || c.Server.Port > 65535 {
+		return fmt.Errorf("invalid port: %d", c.Server.Port)
+	}
+	if c.Server.Host == "" {
+		return fmt.Errorf("host cannot be empty")
+	}
+	if c.Server.TimeoutSec <= 0 {
+		c.Server.TimeoutSec = 60
+	}
+	if c.Retry.MaxAttempts <= 0 {
+		return fmt.Errorf("retry.max_attempts must be positive")
+	}
+	if len(c.Providers) == 0 {
+		return fmt.Errorf("at least one provider required")
+	}
+	seen := make(map[string]bool)
+	for _, p := range c.Providers {
+		if p.Name == "" {
+			return fmt.Errorf("provider name cannot be empty")
+		}
+		if seen[p.Name] {
+			return fmt.Errorf("duplicate provider: %s", p.Name)
+		}
+		seen[p.Name] = true
+	}
+	return nil
 }
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
