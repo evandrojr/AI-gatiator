@@ -1,0 +1,148 @@
+{
+  "server": {
+    "port": 1313,
+    "host": "0.0.0.0",
+    "log_level": "info",
+    "max_concurrent": 0,
+    "timeout_sec": 60
+  },
+  "retry": {
+    "max_attempts": 3,
+    "delay_ms": 500
+  },
+"providers": [
+    {
+      "name": "opencode",
+      "enabled": true,
+      "priority": 10,
+      "base_url": "https://opencode.ai/zen/v1",
+      "api_keys_string": "${OPENCODE_KEY}",
+      "default_model": "big-pickle",
+      "models": [
+        "big-pickle"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "openrouter",
+      "enabled": true,
+      "priority": 20,
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_keys_string": "${OPENROUTER_KEYS}",
+      "default_model": "inclusionai/ling-2.6-flash:free",
+      "models": [
+        "inclusionai/ling-2.6-flash:free",
+        "google/gemma-4-26b-a4b-it:free",
+        "google/gemma-4-31b-it:free",
+        "nvidia/nemotron-3-super-120b-a12b:free",
+        "minimax/minimax-m2.5:free",
+        "openrouter/free",
+        "arcee-ai/trinity-large-preview:free",
+        "liquid/lfm-2.5-1.2b-thinking:free",
+        "liquid/lfm-2.5-1.2b-instruct:free",
+        "nvidia/nemotron-3-nano-30b-a3b:free",
+        "nvidia/nemotron-nano-12b-v2-vl:free",
+        "qwen/qwen3-next-80b-a3b-instruct:free",
+        "nvidia/nemotron-nano-9b-v2:free",
+        "openai/gpt-oss-120b:free",
+        "openai/gpt-oss-20b:free",
+        "z-ai/glm-4-4-air:free",
+        "qwen/qwen3-coder:free",
+        "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+        "google/gemma-3n-e2b-it:free",
+        "google/gemma-3n-e4b-it:free",
+        "google/gemma-3-4b-it:free",
+        "google/gemma-3-12b-it:free",
+        "google/gemma-3-27b-it:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "meta-llama/llama-3.2-3b-instruct:free",
+        "nousresearch/hermes-3-llama-3.1-405b:free"
+      ],
+      "headers": {
+        "HTTP-Referer": "http://localhost:1313",
+        "X-Title": "AI-gatiator"
+      }
+    },
+    {
+      "name": "groq",
+      "enabled": true,
+      "priority": 30,
+      "base_url": "https://api.groq.com/openai/v1",
+      "api_keys_string": "${GROQ_KEY_1}",
+      "default_model": "llama-3.1-8b-instant",
+      "models": [
+        "llama-3.1-8b-instant",
+        "llama-3.3-70b-versatile"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "google",
+      "enabled": true,
+      "priority": 40,
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "api_keys_string": "${GOOGLE_KEYS}",
+      "default_model": "gemini-2.0-flash",
+      "models": [
+        "gemini-2.0-flash",
+        "gemini-2.5-flash-preview-04-17",
+        "gemini-1.5-flash"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "cerebras",
+      "enabled": false,
+      "priority": 50,
+      "base_url": "https://api.cerebras.ai/v1",
+      "api_keys_string": "${CEREBRAS_KEY}",
+      "default_model": "llama3.3-70b",
+      "models": [
+        "llama3.3-70b",
+        "llama3.1-70b",
+        "llama3.1-8b"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "sambanova",
+      "enabled": false,
+      "priority": 60,
+      "base_url": "https://api.sambanova.ai/v1",
+      "api_keys_string": "${SAMBANOVA_KEY}",
+      "default_model": "Meta-Llama-3.3-70B-Instruct",
+      "models": [
+        "Meta-Llama-3.3-70B-Instruct",
+        "DeepSeek-R1",
+        "Meta-Llama-3.1-405B-Instruct"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "deepseek",
+      "enabled": false,
+      "priority": 70,
+      "base_url": "https://api.deepseek.com/v1",
+      "api_keys_string": "${DEEPSEEK_KEY}",
+      "default_model": "deepseek-chat",
+      "models": [
+        "deepseek-chat",
+        "deepseek-reasoner"
+      ],
+      "headers": {}
+    },
+    {
+      "name": "ollama",
+      "enabled": true,
+      "priority": 910,
+      "max_concurrent": 1,
+      "base_url": "http://localhost:11434/v1",
+      "api_keys_string": "",
+      "default_model": "qwen-fast",
+      "models": [
+        "qwen-fast"
+      ],
+      "headers": {}
+    }
+  ]
+}
