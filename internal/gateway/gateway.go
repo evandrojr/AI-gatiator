@@ -509,21 +509,79 @@ func containsModel(models []string, target string) bool {
 
 func (g *Gateway) sanitizeMessages(req map[string]any) {
 	messages, ok := req["messages"].([]any)
-	if !ok {
+	if !ok || len(messages) == 0 {
 		return
 	}
 
+	var newMessages []any
 	var lastToolCallID string
+	
+	log.Printf("[DEBUG] Sanitizing %d messages (Strict Order Mode)...", len(messages))
 
-	for _, msgAny := range messages {
+	for i, msgAny := range messages {
 		msg, ok := msgAny.(map[string]any)
 		if !ok {
+			newMessages = append(newMessages, msgAny)
 			continue
 		}
 
 		role, _ := msg["role"].(string)
 
-		// Se o assistente chamou uma ferramenta, guarda o ID
+		// 1. Normalização de Role (function -> tool)
+		if role == "function" {
+			msg["role"] = "tool"
+			role = "tool"
+		}
+
+		// 2. Se for uma TOOL, precisamos garantir que a anterior foi um ASSISTANT com TOOL_CALLS
+		if role == "tool" {
+			id, _ := msg["tool_call_id"].(string)
+			if id == "" {
+				if lastToolCallID != "" {
+					id = lastToolCallID
+					msg["tool_call_id"] = id
+				} else {
+					id = fmt.Sprintf("call_gen_%d", i)
+					msg["tool_call_id"] = id
+				}
+			}
+
+			// Verifica se a última mensagem no novo histórico foi um assistant com este ID
+			needAssistant := true
+			if len(newMessages) > 0 {
+				if lastMsg, ok := newMessages[len(newMessages)-1].(map[string]any); ok {
+					lastRole, _ := lastMsg["role"].(string)
+					if lastRole == "assistant" {
+						if tcs, exists := lastMsg["tool_calls"].([]any); exists && len(tcs) > 0 {
+							// Se já é um assistant com tool_calls, assumimos que está OK ou tentamos validar o ID
+							needAssistant = false
+						}
+					}
+				}
+			}
+
+			if needAssistant {
+				log.Printf("[FIX] Injetando assistant fantasma antes da tool na posição %d", len(newMessages))
+				ghostAssistant := map[string]any{
+					"role": "assistant",
+					"content": "",
+					"tool_calls": []any{
+						map[string]any{
+							"id": id,
+							"type": "function",
+							"function": map[string]any{
+								"name": "resolved_by_gateway",
+								"arguments": "{}",
+							},
+						},
+					},
+				}
+				newMessages = append(newMessages, ghostAssistant)
+			}
+			lastToolCallID = id
+		}
+
+		// 3. Se for ASSISTANT, capturamos o ID para a próxima TOOL
 		if role == "assistant" {
 			if toolCalls, exists := msg["tool_calls"].([]any); exists && len(toolCalls) > 0 {
 				if firstCall, ok := toolCalls[0].(map[string]any); ok {
@@ -531,19 +589,29 @@ func (g *Gateway) sanitizeMessages(req map[string]any) {
 						lastToolCallID = id
 					}
 				}
+			} else if fCall, exists := msg["function_call"].(map[string]any); exists {
+				// Converte function_call legado para tool_calls
+				lastToolCallID = fmt.Sprintf("call_conv_%d", time.Now().UnixNano())
+				msg["tool_calls"] = []any{
+					map[string]any{
+						"id": lastToolCallID,
+						"type": "function",
+						"function": fCall,
+					},
+				}
+				delete(msg, "function_call")
 			}
 		}
 
-		// Se for uma resposta de ferramenta e faltar o ID, injeta o último conhecido
-		if role == "tool" {
-			if id, ok := msg["tool_call_id"].(string); !ok || id == "" {
-				if lastToolCallID != "" {
-					msg["tool_call_id"] = lastToolCallID
-					log.Printf("[FIX] Injetando tool_call_id=%s para mensagem de role=tool", lastToolCallID)
-				}
-			}
+		// Limpeza de content null
+		if content, exists := msg["content"]; exists && content == nil {
+			msg["content"] = ""
 		}
+
+		newMessages = append(newMessages, msg)
 	}
+
+	req["messages"] = newMessages
 }
 
 func truncate(s string, n int) string {
