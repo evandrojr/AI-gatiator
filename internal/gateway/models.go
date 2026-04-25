@@ -71,6 +71,10 @@ func UpdateModels(cfgPath string, cfg *Config) {
 				if strings.HasSuffix(strings.ToLower(m.ID), "-free") {
 					newModels = append(newModels, m.ID)
 				}
+			} else if p.Name == "openrouter" {
+				if strings.Contains(strings.ToLower(m.ID), "free") {
+					newModels = append(newModels, m.ID)
+				}
 			} else {
 				newModels = append(newModels, m.ID)
 			}
