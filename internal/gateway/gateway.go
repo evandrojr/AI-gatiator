@@ -295,9 +295,11 @@ func (g *Gateway) Forward(reqMap map[string]any, initialModel string, w http.Res
 						return
 					}
 
-					// 404 = modelo não encontrado: pula para o próximo modelo sem penalizar o provider
-					if statusCode == 404 {
-						log.Printf("[SKIP] %s modelo=%s não encontrado (404), tentando próximo modelo...", provider.Name, model)
+					// 404 = modelo não encontrado
+					// 400 = requisição inválida/incompatível (ex: tool_call_id ausente)
+					// Ambos indicam incompatibilidade de formato — pula para o próximo modelo sem penalizar o provider
+					if statusCode == 404 || statusCode == 400 {
+						log.Printf("[SKIP] %s modelo=%s incompatível (status=%d), tentando próximo modelo...", provider.Name, model, statusCode)
 						continue
 					}
 
