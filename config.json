@@ -1,43 +1,78 @@
 {
-  "server": {
-    "port": 1313,
-    "host": "0.0.0.0",
-    "log_level": "info",
-    "max_concurrent": 0,
-    "timeout_sec": 60
-  },
-  "retry": {
-    "max_attempts": 3,
-    "delay_ms": 500
-  },
-"providers": [
+  "providers": [
     {
-      "name": "opencode",
-      "enabled": true,
-      "priority": 10,
-      "base_url": "https://opencode.ai/zen/v1",
       "api_keys_string": "${OPENCODE_KEY}",
+      "base_url": "https://opencode.ai/zen/v1",
       "default_model": "big-pickle",
+      "enabled": true,
+      "headers": {},
       "models": [
-        "big-pickle"
+        "claude-opus-4-7",
+        "claude-opus-4-6",
+        "claude-opus-4-5",
+        "claude-opus-4-1",
+        "claude-sonnet-4-6",
+        "claude-sonnet-4-5",
+        "claude-sonnet-4",
+        "claude-3-5-haiku",
+        "claude-haiku-4-5",
+        "gemini-3.1-pro",
+        "gemini-3-pro",
+        "gemini-3-flash",
+        "gpt-5.5",
+        "gpt-5.5-pro",
+        "gpt-5.4",
+        "gpt-5.4-pro",
+        "gpt-5.4-mini",
+        "gpt-5.4-nano",
+        "gpt-5.3-codex-spark",
+        "gpt-5.3-codex",
+        "gpt-5.2",
+        "gpt-5.2-codex",
+        "gpt-5.1",
+        "gpt-5.1-codex-max",
+        "gpt-5.1-codex",
+        "gpt-5.1-codex-mini",
+        "gpt-5",
+        "gpt-5-codex",
+        "gpt-5-nano",
+        "glm-5.1",
+        "glm-5",
+        "minimax-m2.7",
+        "minimax-m2.5",
+        "kimi-k2.6",
+        "kimi-k2.5",
+        "qwen3.6-plus",
+        "qwen3.5-plus",
+        "big-pickle",
+        "minimax-m2.5-free",
+        "hy3-preview-free",
+        "ling-2.6-flash-free",
+        "trinity-large-preview-free",
+        "nemotron-3-super-free"
       ],
-      "headers": {}
+      "name": "opencode",
+      "priority": 10
     },
     {
-      "name": "openrouter",
-      "enabled": true,
-      "priority": 20,
-      "base_url": "https://openrouter.ai/api/v1",
       "api_keys_string": "${OPENROUTER_KEYS}",
+      "base_url": "https://openrouter.ai/api/v1",
       "default_model": "inclusionai/ling-2.6-flash:free",
+      "enabled": true,
+      "headers": {
+        "HTTP-Referer": "http://localhost:1313",
+        "X-Title": "AI-gatiator"
+      },
       "models": [
+        "inclusionai/ling-2.6-1t:free",
+        "tencent/hy3-preview:free",
         "inclusionai/ling-2.6-flash:free",
+        "baidu/qianfan-ocr-fast:free",
         "google/gemma-4-26b-a4b-it:free",
         "google/gemma-4-31b-it:free",
         "nvidia/nemotron-3-super-120b-a12b:free",
         "minimax/minimax-m2.5:free",
         "openrouter/free",
-        "arcee-ai/trinity-large-preview:free",
         "liquid/lfm-2.5-1.2b-thinking:free",
         "liquid/lfm-2.5-1.2b-instruct:free",
         "nvidia/nemotron-3-nano-30b-a3b:free",
@@ -46,7 +81,7 @@
         "nvidia/nemotron-nano-9b-v2:free",
         "openai/gpt-oss-120b:free",
         "openai/gpt-oss-20b:free",
-        "z-ai/glm-4-4-air:free",
+        "z-ai/glm-4.5-air:free",
         "qwen/qwen3-coder:free",
         "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
         "google/gemma-3n-e2b-it:free",
@@ -58,91 +93,167 @@
         "meta-llama/llama-3.2-3b-instruct:free",
         "nousresearch/hermes-3-llama-3.1-405b:free"
       ],
-      "headers": {
-        "HTTP-Referer": "http://localhost:1313",
-        "X-Title": "AI-gatiator"
-      }
+      "name": "openrouter",
+      "priority": 20
     },
     {
-      "name": "groq",
-      "enabled": true,
-      "priority": 30,
+      "api_keys_string": "${GROQ_KEYS}",
       "base_url": "https://api.groq.com/openai/v1",
-      "api_keys_string": "${GROQ_KEY_1}",
       "default_model": "llama-3.1-8b-instant",
-      "models": [
-        "llama-3.1-8b-instant",
-        "llama-3.3-70b-versatile"
-      ],
-      "headers": {}
-    },
-    {
-      "name": "google",
       "enabled": true,
-      "priority": 40,
-      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
-      "api_keys_string": "${GOOGLE_KEYS}",
-      "default_model": "gemini-2.0-flash",
+      "headers": {},
       "models": [
-        "gemini-2.0-flash",
-        "gemini-2.5-flash-preview-04-17",
-        "gemini-1.5-flash"
+        "canopylabs/orpheus-v1-english",
+        "allam-2-7b",
+        "whisper-large-v3-turbo",
+        "llama-3.1-8b-instant",
+        "meta-llama/llama-prompt-guard-2-22m",
+        "groq/compound",
+        "llama-3.3-70b-versatile",
+        "groq/compound-mini",
+        "meta-llama/llama-prompt-guard-2-86m",
+        "qwen/qwen3-32b",
+        "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b",
+        "meta-llama/llama-4-scout-17b-16e-instruct",
+        "canopylabs/orpheus-arabic-saudi",
+        "whisper-large-v3",
+        "openai/gpt-oss-safeguard-20b"
       ],
-      "headers": {}
+      "name": "groq",
+      "priority": 30
     },
     {
-      "name": "cerebras",
-      "enabled": false,
-      "priority": 50,
-      "base_url": "https://api.cerebras.ai/v1",
+      "api_keys_string": "${GOOGLE_KEYS}",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "default_model": "models/gemini-2.5-flash",
+      "enabled": true,
+      "headers": {},
+      "models": [
+        "models/gemini-2.5-flash",
+        "models/gemini-2.5-pro",
+        "models/gemini-2.0-flash",
+        "models/gemini-2.0-flash-001",
+        "models/gemini-2.0-flash-lite-001",
+        "models/gemini-2.0-flash-lite",
+        "models/gemini-2.5-flash-preview-tts",
+        "models/gemini-2.5-pro-preview-tts",
+        "models/gemma-3-1b-it",
+        "models/gemma-3-4b-it",
+        "models/gemma-3-12b-it",
+        "models/gemma-3-27b-it",
+        "models/gemma-3n-e4b-it",
+        "models/gemma-3n-e2b-it",
+        "models/gemma-4-26b-a4b-it",
+        "models/gemma-4-31b-it",
+        "models/gemini-flash-latest",
+        "models/gemini-flash-lite-latest",
+        "models/gemini-pro-latest",
+        "models/gemini-2.5-flash-lite",
+        "models/gemini-2.5-flash-image",
+        "models/gemini-3-pro-preview",
+        "models/gemini-3-flash-preview",
+        "models/gemini-3.1-pro-preview",
+        "models/gemini-3.1-pro-preview-customtools",
+        "models/gemini-3.1-flash-lite-preview",
+        "models/gemini-3-pro-image-preview",
+        "models/nano-banana-pro-preview",
+        "models/gemini-3.1-flash-image-preview",
+        "models/lyria-3-clip-preview",
+        "models/lyria-3-pro-preview",
+        "models/gemini-3.1-flash-tts-preview",
+        "models/gemini-robotics-er-1.5-preview",
+        "models/gemini-robotics-er-1.6-preview",
+        "models/gemini-2.5-computer-use-preview-10-2025",
+        "models/deep-research-max-preview-04-2026",
+        "models/deep-research-preview-04-2026",
+        "models/deep-research-pro-preview-12-2025",
+        "models/gemini-embedding-001",
+        "models/gemini-embedding-2-preview",
+        "models/gemini-embedding-2",
+        "models/aqa",
+        "models/imagen-4.0-generate-001",
+        "models/imagen-4.0-ultra-generate-001",
+        "models/imagen-4.0-fast-generate-001",
+        "models/veo-2.0-generate-001",
+        "models/veo-3.0-generate-001",
+        "models/veo-3.0-fast-generate-001",
+        "models/veo-3.1-generate-preview",
+        "models/veo-3.1-fast-generate-preview",
+        "models/veo-3.1-lite-generate-preview",
+        "models/gemini-2.5-flash-native-audio-latest",
+        "models/gemini-2.5-flash-native-audio-preview-09-2025",
+        "models/gemini-2.5-flash-native-audio-preview-12-2025",
+        "models/gemini-3.1-flash-live-preview",
+        "models/lyria-realtime-exp"
+      ],
+      "name": "google",
+      "priority": 40
+    },
+    {
       "api_keys_string": "${CEREBRAS_KEY}",
+      "base_url": "https://api.cerebras.ai/v1",
       "default_model": "llama3.3-70b",
+      "enabled": false,
+      "headers": {},
       "models": [
         "llama3.3-70b",
         "llama3.1-70b",
         "llama3.1-8b"
       ],
-      "headers": {}
+      "name": "cerebras",
+      "priority": 50
     },
     {
-      "name": "sambanova",
-      "enabled": false,
-      "priority": 60,
-      "base_url": "https://api.sambanova.ai/v1",
       "api_keys_string": "${SAMBANOVA_KEY}",
+      "base_url": "https://api.sambanova.ai/v1",
       "default_model": "Meta-Llama-3.3-70B-Instruct",
+      "enabled": false,
+      "headers": {},
       "models": [
         "Meta-Llama-3.3-70B-Instruct",
         "DeepSeek-R1",
         "Meta-Llama-3.1-405B-Instruct"
       ],
-      "headers": {}
+      "name": "sambanova",
+      "priority": 60
     },
     {
-      "name": "deepseek",
-      "enabled": false,
-      "priority": 70,
-      "base_url": "https://api.deepseek.com/v1",
       "api_keys_string": "${DEEPSEEK_KEY}",
+      "base_url": "https://api.deepseek.com/v1",
       "default_model": "deepseek-chat",
+      "enabled": false,
+      "headers": {},
       "models": [
         "deepseek-chat",
         "deepseek-reasoner"
       ],
-      "headers": {}
+      "name": "deepseek",
+      "priority": 70
     },
     {
-      "name": "ollama",
-      "enabled": true,
-      "priority": 910,
-      "max_concurrent": 1,
-      "base_url": "http://localhost:11434/v1",
       "api_keys_string": "",
+      "base_url": "http://localhost:11434/v1",
       "default_model": "qwen-fast",
+      "enabled": true,
+      "headers": {},
+      "max_concurrent": 1,
       "models": [
         "qwen-fast"
       ],
-      "headers": {}
+      "name": "ollama",
+      "priority": 910
     }
-  ]
+  ],
+  "retry": {
+    "delay_ms": 500,
+    "max_attempts": 3
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "log_level": "info",
+    "max_concurrent": 0,
+    "port": 1313,
+    "timeout_sec": 60
+  }
 }

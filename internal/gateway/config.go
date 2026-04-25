@@ -30,7 +30,7 @@ type ProviderConfig struct {
 	MaxConcurrent int               `json:"max_concurrent"` // 0 = unlimited
 	BaseURL       string            `json:"base_url"`
 	APIKeys       []string          `json:"api_keys,omitempty"`
-	APIKeysString string            `json:"api_keys_string,omitempty"`
+	APIKeysString string            `json:"api_keys_string"`
 	APIKey        string            `json:"api_key,omitempty"`
 	DefaultModel  string            `json:"default_model"`
 	Models        []string          `json:"models"`

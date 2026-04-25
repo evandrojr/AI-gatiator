@@ -96,7 +96,36 @@ func UpdateModels(cfgPath string, cfg *Config) {
 	}
 
 	if updated {
-		outBytes, err := json.MarshalIndent(cfg, "", "  ")
+		rawData, err := os.ReadFile(cfgPath)
+		if err != nil {
+			log.Fatalf("Erro ao ler config original: %v", err)
+		}
+
+		var rawCfg map[string]interface{}
+		if err := json.Unmarshal(rawData, &rawCfg); err != nil {
+			log.Fatalf("Erro ao parsear config original: %v", err)
+		}
+
+		providers, ok := rawCfg["providers"].([]interface{})
+		if !ok {
+			log.Fatalf("Config inválido: providers não encontrado")
+		}
+
+		for i, p := range cfg.Providers {
+			if i < len(providers) {
+				providerMap, ok := providers[i].(map[string]interface{})
+				if ok {
+					providerMap["models"] = p.Models
+					if p.DefaultModel != "" {
+						providerMap["default_model"] = p.DefaultModel
+					}
+					providers[i] = providerMap
+				}
+			}
+		}
+		rawCfg["providers"] = providers
+
+		outBytes, err := json.MarshalIndent(rawCfg, "", "  ")
 		if err != nil {
 			log.Fatalf("Erro ao serializar config atualizado: %v", err)
 		}
