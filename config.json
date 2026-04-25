@@ -4,7 +4,7 @@
       "api_keys_string": "${OPENCODE_KEY}",
       "base_url": "https://opencode.ai/zen/v1",
       "default_model": "minimax-m2.5-free",
-      "enabled": true,
+      "enabled": false,
       "headers": {},
       "models": [
         "minimax-m2.5-free",
@@ -62,7 +62,7 @@
       "api_keys_string": "${GROQ_KEYS}",
       "base_url": "https://api.groq.com/openai/v1",
       "default_model": "llama-3.1-8b-instant",
-      "enabled": true,
+      "enabled": false,
       "headers": {},
       "models": [
         "whisper-large-v3",
@@ -183,12 +183,12 @@
     {
       "api_keys_string": "${DEEPSEEK_KEY}",
       "base_url": "https://api.deepseek.com/v1",
-      "default_model": "deepseek-chat",
-      "enabled": false,
+      "default_model": "deepseek-v4-flash",
+      "enabled": true,
       "headers": {},
       "models": [
-        "deepseek-chat",
-        "deepseek-reasoner"
+        "deepseek-v4-flash",
+        "deepseek-v4-pro"
       ],
       "name": "deepseek",
       "priority": 70
@@ -197,7 +197,7 @@
       "api_keys_string": "",
       "base_url": "http://localhost:11434/v1",
       "default_model": "qwen-fast",
-      "enabled": true,
+      "enabled": false,
       "headers": {},
       "max_concurrent": 1,
       "models": [

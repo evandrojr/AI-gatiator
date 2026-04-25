@@ -299,18 +299,24 @@ func (g *Gateway) Forward(reqMap map[string]any, initialModel string, w http.Res
 					// 400 = requisição inválida/incompatível (ex: tool_call_id ausente)
 					// Ambos indicam incompatibilidade de formato — pula para o próximo modelo sem penalizar o provider
 					if statusCode == 404 || statusCode == 400 {
-						log.Printf("[SKIP] %s modelo=%s incompatível (status=%d), tentando próximo modelo...", provider.Name, model, statusCode)
+						log.Printf("[SKIP] %s modelo=%s incompatível (status=%d) body=%s, tentando próximo modelo...", provider.Name, model, statusCode, truncate(string(body), 200))
 						continue
 					}
 
 					st.States[stateKey].recordFailure()
+
+					// 401/403 = erro de autenticação: não repassa ao cliente, apenas loga e tenta o próximo provider
+					if statusCode == 401 || statusCode == 403 {
+						log.Printf("[AUTH] %s (key=%s) chave inválida (status=%d), tentando próximo provider...", provider.Name, truncate(key, 8), statusCode)
+						break // sai do loop de modelos, vai para a próxima chave — sem atualizar lastBody
+					}
+
 					log.Printf("[FAIL] %s (key=%s) modelo=%s tentativa=%d/%d status=%d", provider.Name, truncate(key, 8), model, attempt+1, maxAttempts, statusCode)
-					
 					lastStatusCode = statusCode
 					lastBody = body
 
-					// Se for Rate Limit (429), Auth Error (401, 403) ou Server Error (5xx), não adianta tentar outro modelo na MESMA chave
-					if statusCode == 429 || statusCode == 401 || statusCode == 403 || statusCode >= 500 {
+					// Rate Limit (429) ou Server Error (5xx): não adianta tentar outro modelo na MESMA chave
+					if statusCode == 429 || statusCode >= 500 {
 						break // sai do loop de modelos, vai para a próxima chave
 					}
 				}
