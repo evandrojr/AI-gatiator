@@ -281,6 +281,11 @@ func (g *Gateway) Forward(reqMap map[string]any, initialModel string, w http.Res
 				for _, model := range filtered {
 					reqMap["model"] = model
 
+					// Sanitização para DeepSeek (Eva compat)
+					if provider.Name == "deepseek" {
+						g.sanitizeMessages(reqMap)
+					}
+
 					success, statusCode, body, blocked := g.tryProviderWithKey(provider, key, reqMap, w, originalPath)
 
 					if blocked {
@@ -295,12 +300,17 @@ func (g *Gateway) Forward(reqMap map[string]any, initialModel string, w http.Res
 						return
 					}
 
-					// 404 = modelo não encontrado
-					// 400 = requisição inválida/incompatível (ex: tool_call_id ausente)
-					// Ambos indicam incompatibilidade de formato — pula para o próximo modelo sem penalizar o provider
-					if statusCode == 404 || statusCode == 400 {
-						log.Printf("[SKIP] %s modelo=%s incompatível (status=%d) body=%s, tentando próximo modelo...", provider.Name, model, statusCode, truncate(string(body), 200))
+					// 404 = modelo não encontrado: tenta o próximo modelo do mesmo provider
+					if statusCode == 404 {
+						log.Printf("[SKIP] %s modelo=%s não encontrado (404), tentando próximo modelo...", provider.Name, model)
 						continue
+					}
+
+					// 400 = formato incompatível com o provider (ex: tool_call_id ausente)
+					// Afeta TODOS os modelos do mesmo provider — pula direto para o próximo provider
+					if statusCode == 400 {
+						log.Printf("[SKIP] %s formato incompatível (status=400) body=%s, pulando provider...", provider.Name, truncate(string(body), 200))
+						break
 					}
 
 					st.States[stateKey].recordFailure()
@@ -495,6 +505,45 @@ func containsModel(models []string, target string) bool {
 	}
 	log.Printf("[DEBUG] containsModel: NO match")
 	return false
+}
+
+func (g *Gateway) sanitizeMessages(req map[string]any) {
+	messages, ok := req["messages"].([]any)
+	if !ok {
+		return
+	}
+
+	var lastToolCallID string
+
+	for _, msgAny := range messages {
+		msg, ok := msgAny.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		role, _ := msg["role"].(string)
+
+		// Se o assistente chamou uma ferramenta, guarda o ID
+		if role == "assistant" {
+			if toolCalls, exists := msg["tool_calls"].([]any); exists && len(toolCalls) > 0 {
+				if firstCall, ok := toolCalls[0].(map[string]any); ok {
+					if id, ok := firstCall["id"].(string); ok {
+						lastToolCallID = id
+					}
+				}
+			}
+		}
+
+		// Se for uma resposta de ferramenta e faltar o ID, injeta o último conhecido
+		if role == "tool" {
+			if id, ok := msg["tool_call_id"].(string); !ok || id == "" {
+				if lastToolCallID != "" {
+					msg["tool_call_id"] = lastToolCallID
+					log.Printf("[FIX] Injetando tool_call_id=%s para mensagem de role=tool", lastToolCallID)
+				}
+			}
+		}
+	}
 }
 
 func truncate(s string, n int) string {
