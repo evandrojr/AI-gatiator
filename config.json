@@ -89,7 +89,7 @@
       "api_keys_string": "${GOOGLE_KEYS}",
       "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
       "default_model": "models/gemini-2.5-flash",
-      "enabled": true,
+      "enabled": false,
       "headers": {},
       "models": [
         "models/gemini-2.5-flash",

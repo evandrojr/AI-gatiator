@@ -295,6 +295,12 @@ func (g *Gateway) Forward(reqMap map[string]any, initialModel string, w http.Res
 						return
 					}
 
+					// 404 = modelo não encontrado: pula para o próximo modelo sem penalizar o provider
+					if statusCode == 404 {
+						log.Printf("[SKIP] %s modelo=%s não encontrado (404), tentando próximo modelo...", provider.Name, model)
+						continue
+					}
+
 					st.States[stateKey].recordFailure()
 					log.Printf("[FAIL] %s (key=%s) modelo=%s tentativa=%d/%d status=%d", provider.Name, truncate(key, 8), model, attempt+1, maxAttempts, statusCode)
 					
