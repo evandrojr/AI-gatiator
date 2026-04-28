@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"sort"
 	"strings"
 	"sync"
@@ -107,11 +108,43 @@ func (st *GatewayState) availableProviders() []ProviderConfig {
 	return active
 }
 
+const logFile = "/tmp/ai-gatiator-logs.json"
+
+type LogEntry struct {
+	Time         string `json:"time"`
+	Method       string `json:"method"`
+	Path         string `json:"path"`
+	DurationMs   int64  `json:"duration_ms"`
+	StatusCode   int    `json:"status_code"`
+	RequestBody  string `json:"request_body,omitempty"`
+	ResponseBody string `json:"response_body,omitempty"`
+}
+
 type Gateway struct {
-	mu           sync.RWMutex
-	state        *GatewayState
-	semaphores   map[string]chan struct{}
-	timeout     time.Duration
+	mu         sync.RWMutex
+	state      *GatewayState
+	semaphores map[string]chan struct{}
+	timeout    time.Duration
+}
+
+func readLogsFromFile() []LogEntry {
+	data, err := os.ReadFile(logFile)
+	if err != nil {
+		return []LogEntry{}
+	}
+	var logs []LogEntry
+	json.Unmarshal(data, &logs)
+	return logs
+}
+
+func appendLogToFile(entry LogEntry) {
+	logs := readLogsFromFile()
+	logs = append(logs, entry)
+	if len(logs) > 200 {
+		logs = logs[len(logs)-200:]
+	}
+	data, _ := json.MarshalIndent(logs, "", "  ")
+	os.WriteFile(logFile, data, 0644)
 }
 
 func NewGateway(cfg Config) *Gateway {
@@ -486,12 +519,68 @@ func (g *Gateway) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(status)
 }
 
-func LoggingMiddleware(next http.Handler) http.Handler {
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+	body   bytes.Buffer
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
+func (r *statusRecorder) Write(b []byte) (int, error) {
+	r.body.Write(b)
+	return r.ResponseWriter.Write(b)
+}
+
+func (g *Gateway) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+		recorder := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		log.Printf("→ %s %s", r.Method, r.URL.Path)
-		next.ServeHTTP(w, r)
-		log.Printf("← %s %s %v", r.Method, r.URL.Path, time.Since(start))
+
+		var reqSnippet string
+		if r.Method == "POST" {
+			body, err := io.ReadAll(r.Body)
+			if err == nil {
+				r.Body = io.NopCloser(bytes.NewReader(body))
+				reqSnippet = truncate(string(body), 500)
+			}
+		}
+
+		next.ServeHTTP(recorder, r)
+		dur := time.Since(start)
+		log.Printf("← %s %s %v", r.Method, r.URL.Path, dur)
+		appendLogToFile(LogEntry{
+			Time:         time.Now().Format(time.RFC3339),
+			Method:       r.Method,
+			Path:         r.URL.Path,
+			DurationMs:   dur.Milliseconds(),
+			StatusCode:   recorder.status,
+			RequestBody:  reqSnippet,
+			ResponseBody: truncate(recorder.body.String(), 1000),
+		})
+	})
+}
+
+func (g *Gateway) HandleLogs(w http.ResponseWriter, r *http.Request) {
+	// Prefer systemd journal output for the service logs. If journalctl is unavailable
+	// or fails (e.g., running on non-systemd systems), fall back to the internal log file.
+	cmd := exec.Command("journalctl", "-u", "aigatiator", "--no-pager", "-n", "500", "--output=short-iso")
+	out, err := cmd.Output()
+	if err == nil {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write(out)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	logs := readLogsFromFile()
+	json.NewEncoder(w).Encode(map[string]any{
+		"logs":    logs,
+		"warning": fmt.Sprintf("failed to run journalctl: %v", err),
 	})
 }
 
