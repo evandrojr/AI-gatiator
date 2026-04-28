@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -70,6 +71,70 @@ func KillProcessOnPort(port int) {
 					exec.Command("kill", "-9", pid).Run()
 					log.Printf("Processo AI-gatiator antigo (PID %s) na porta %d finalizado.", pid, port)
 				}
+			}
+		}
+	}
+}
+
+func KillAllGatiatorProcesses() {
+	execName := "AI-gatiator"
+	if runtime.GOOS == "windows" {
+		execName = "AI-gatiator.exe"
+	}
+
+	// Tenta via pgrep primeiro (mais preciso)
+	if runtime.GOOS != "windows" {
+		cmd := exec.Command("pgrep", "-f", execName)
+		out, err := cmd.Output()
+		if err == nil {
+			pids := strings.Split(strings.TrimSpace(string(out)), "\n")
+			for _, pidStr := range pids {
+				pidStr = strings.TrimSpace(pidStr)
+				if pidStr == "" {
+					continue
+				}
+				pid, err := strconv.Atoi(pidStr)
+				if err != nil {
+					continue
+				}
+				// Não mata o próprio processo
+				if pid == os.Getpid() {
+					continue
+				}
+				if err := exec.Command("kill", "-9", pidStr).Run(); err == nil {
+					log.Printf("Processo AI-gatiator antigo (PID %s) finalizado.", pidStr)
+				}
+			}
+		}
+	}
+
+	// Fallback: varre /proc no Linux
+	if runtime.GOOS != "windows" {
+		dirs, err := os.ReadDir("/proc")
+		if err != nil {
+			return
+		}
+		for _, d := range dirs {
+			if !d.IsDir() {
+				continue
+			}
+			pidStr := d.Name()
+			commPath := fmt.Sprintf("/proc/%s/comm", pidStr)
+			commBytes, err := os.ReadFile(commPath)
+			if err != nil {
+				continue
+			}
+			name := strings.TrimSpace(string(commBytes))
+			if strings.Contains(name, "AI-gatiator") || strings.Contains(name, "aigatiator") {
+				pid, err := strconv.Atoi(pidStr)
+				if err != nil {
+					continue
+				}
+				if pid == os.Getpid() {
+					continue
+				}
+				exec.Command("kill", "-9", pidStr).Run()
+				log.Printf("Processo AI-gatiator antigo (PID %s) finalizado via /proc.", pidStr)
 			}
 		}
 	}

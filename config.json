@@ -19,7 +19,7 @@
     {
       "api_keys_string": "${OPENROUTER_KEYS}",
       "base_url": "https://openrouter.ai/api/v1",
-      "default_model": "inclusionai/ling-2.6-flash:free",
+      "default_model": "nvidia/nemotron-3-super-120b-a12b:free",
       "enabled": false,
       "headers": {
         "HTTP-Referer": "http://localhost:1313",
@@ -183,12 +183,12 @@
     {
       "api_keys_string": "${DEEPSEEK_KEY}",
       "base_url": "https://api.deepseek.com/v1",
-      "default_model": "deepseek-v4-flash",
+      "default_model": "deepseek-chat",
       "enabled": true,
       "headers": {},
       "models": [
-        "deepseek-v4-flash",
-        "deepseek-v4-pro"
+        "deepseek-chat",
+        "deepseek-reasoner"
       ],
       "name": "deepseek",
       "priority": 70

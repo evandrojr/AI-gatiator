@@ -1,0 +1,21 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/AI-gatiator ./cmd/gateway"
+  entrypoint = "tmp/AI-gatiator"
+  include_ext = ["go", "toml", "json"]
+  kill_delay = "500ms"
+  delay = 1000
+
+[watch]
+  modes = ["poll"]
+  poll_interval = 1000
+  dirs = [
+    "cmd/gateway",
+    "internal/gateway",
+  ]
+  exclude_dirs = ["tmp", "gateway.test"]
+
+[log]
+  time = false

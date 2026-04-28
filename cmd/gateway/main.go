@@ -74,14 +74,16 @@ func main() {
 	mux.HandleFunc("/v1/models", gw.HandleModels)
 	mux.HandleFunc("/v1/", gw.HandleGeneric)
 	mux.HandleFunc("/health", gw.HandleHealth)
+	mux.HandleFunc("/logs", gw.HandleLogs)
 
+	gateway.KillAllGatiatorProcesses()
 	gateway.KillProcessOnPort(cfg.Server.Port)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("AI-gatiator rodando em http://%s", addr)
 	log.Printf("Endpoints: POST /v1/chat/completions | GET /v1/models | GET /health")
 
-	if err := http.ListenAndServe(addr, gateway.LoggingMiddleware(mux)); err != nil {
+	if err := http.ListenAndServe(addr, gw.LoggingMiddleware(mux)); err != nil {
 		log.Fatalf("Erro ao iniciar servidor: %v", err)
 	}
 }
