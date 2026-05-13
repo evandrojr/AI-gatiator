@@ -4,7 +4,7 @@
       "api_keys_string": "${OPENCODE_KEY}",
       "base_url": "https://opencode.ai/zen/v1",
       "default_model": "minimax-m2.5-free",
-      "enabled": false,
+      "enabled": true,
       "headers": {},
       "models": [
         "minimax-m2.5-free",
@@ -184,7 +184,7 @@
       "api_keys_string": "${DEEPSEEK_KEY}",
       "base_url": "https://api.deepseek.com/v1",
       "default_model": "deepseek-v4-flash",
-      "enabled": true,
+      "enabled": false,
       "headers": {},
       "models": [
         "deepseek-v4-flash",
