@@ -3,15 +3,16 @@
     {
       "api_keys_string": "${OPENCODE_KEY}",
       "base_url": "https://opencode.ai/zen/v1",
-      "default_model": "minimax-m2.5-free",
+      "default_model": "deepseek-v4-flash-free",
       "enabled": true,
       "headers": {},
       "models": [
-        "minimax-m2.5-free",
-        "hy3-preview-free",
-        "ling-2.6-flash-free",
-        "trinity-large-preview-free",
-        "nemotron-3-super-free"
+        "deepseek-v4-flash-free",
+        "mimo-v2.5-free",
+        "qwen3.6-plus-free",
+        "minimax-m3-free",
+        "nemotron-3-ultra-free",
+        "north-mini-code-free"
       ],
       "name": "opencode",
       "priority": 10
