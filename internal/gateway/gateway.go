@@ -537,6 +537,10 @@ func (r *statusRecorder) Write(b []byte) (int, error) {
 
 func (g *Gateway) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/logs" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		start := time.Now()
 		recorder := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		log.Printf("→ %s %s", r.Method, r.URL.Path)
@@ -571,8 +575,15 @@ func (g *Gateway) HandleLogs(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("journalctl", "-u", "aigatiator", "--no-pager", "-n", "500", "--output=short-iso")
 	out, err := cmd.Output()
 	if err == nil {
+		var filtered bytes.Buffer
+		for _, line := range bytes.Split(out, []byte("\n")) {
+			if !bytes.Contains(line, []byte("/logs")) {
+				filtered.Write(line)
+				filtered.WriteByte('\n')
+			}
+		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Write(out)
+		w.Write(filtered.Bytes())
 		return
 	}
 
