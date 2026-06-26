@@ -1,7 +1,7 @@
 # 🐱 AI-gatiator 🐾
 
 Servidor local em Go que expõe uma API OpenAI-compatible e faz fallback automático 🔄
-entre múltiplos provedores de IA (OpenRouter, Groq, Google, Cerebras, SambaNova, DeepSeek, Ollama). 🐈
+entre múltiplos provedores de IA (OpenRouter, Groq, Google, Cerebras, SambaNova, DeepSeek, Ollama, llama.cpp). 🐈
 
 ## ✨ Por que usar o AI-gatiator?
 
@@ -28,6 +28,7 @@ Os provedores que você não possui chave podem ser desabilitados no `config.jso
 | SambaNova   | https://cloud.sambanova.ai/                 | ✅ sim     |
 | DeepSeek    | https://platform.deepseek.com/api_keys      | 💲 pago    |
 | Ollama      | não precisa (local)                         | ✅ sim     |
+| llama.cpp   | não precisa (local)                         | ✅ sim     |
 
 ### 2. Compile e rode
 

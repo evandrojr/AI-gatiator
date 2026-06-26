@@ -21,7 +21,8 @@ func UpdateModels(cfgPath string, cfg *Config) {
 	updated := false
 
 	for i, p := range cfg.Providers {
-		if !p.Enabled {
+		isLocal := strings.Contains(p.BaseURL, "localhost") || strings.Contains(p.BaseURL, "127.0.0.1")
+		if !p.Enabled && !isLocal {
 			continue
 		}
 
@@ -44,10 +45,16 @@ func UpdateModels(cfgPath string, cfg *Config) {
 			req.Header.Set("Authorization", "Bearer "+keys[0])
 		}
 
-		client := &http.Client{Timeout: 15 * time.Second}
+		client := &http.Client{Timeout: 5 * time.Second} // Timeout menor para local
+		if !isLocal {
+			client.Timeout = 15 * time.Second
+		}
+		
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Printf("Erro ao consultar %s: %v", p.Name, err)
+			if p.Enabled {
+				log.Printf("Erro ao consultar %s: %v", p.Name, err)
+			}
 			continue
 		}
 

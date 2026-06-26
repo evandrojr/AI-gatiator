@@ -184,6 +184,32 @@ func GenerateDefaultConfig(path string) {
 				},
 				Headers: map[string]string{},
 			},
+			{
+				Name:         "ollama",
+				Enabled:      false,
+				Priority:     10,
+				BaseURL:      "http://localhost:11434/v1",
+				APIKeysString: "",
+				DefaultModel: "llama3",
+				Models: []string{
+					"llama3",
+				},
+				MaxConcurrent: 1,
+				Headers: map[string]string{},
+			},
+			{
+				Name:         "llama.cpp",
+				Enabled:      false,
+				Priority:     11,
+				BaseURL:      "http://localhost:8080/v1",
+				APIKeysString: "",
+				DefaultModel: "local-model",
+				Models: []string{
+					"local-model",
+				},
+				MaxConcurrent: 1,
+				Headers: map[string]string{},
+			},
 		},
 	}
 

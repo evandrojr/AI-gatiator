@@ -205,6 +205,19 @@
       ],
       "name": "ollama",
       "priority": 910
+    },
+    {
+      "api_keys_string": "",
+      "base_url": "http://localhost:8080/v1",
+      "default_model": "local-model",
+      "enabled": false,
+      "headers": {},
+      "max_concurrent": 1,
+      "models": [
+        "local-model"
+      ],
+      "name": "llama.cpp",
+      "priority": 920
     }
   ],
   "retry": {
